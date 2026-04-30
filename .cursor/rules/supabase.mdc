@@ -1,0 +1,13 @@
+---
+description: Supabase data model and access rules for watchlist tracking
+globs: **/*.{ts,tsx,sql}
+alwaysApply: false
+---
+
+# Supabase Rules
+
+- Use a single MVP table named `watchlist` unless the spec changes.
+- Required fields: `id`, `symbol`, `target_price`, `is_notified`, `created_at`; optional fields: `last_price`, `notified_at`, `updated_at`.
+- Validate `symbol` and `target_price` before writes; invalid data must not reach Supabase.
+- After a successful Telegram notification, update `is_notified` and `notified_at` in the same logical flow.
+- Keep service-role keys server-side only; client code may use only the anon key with appropriate policies.

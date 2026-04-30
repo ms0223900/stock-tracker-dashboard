@@ -1,0 +1,13 @@
+---
+description: Telegram notification behavior for target price alerts
+globs: **/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Telegram Rules
+
+- Send Telegram messages only after `currentPrice >= targetPrice` and `is_notified` is `false`.
+- Include stock symbol, current price, target price, and trigger time in every alert.
+- If sending fails, keep `is_notified` as `false` so the user can retry after fixing configuration.
+- Store `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` in environment variables.
+- Avoid duplicate notifications for the same watchlist row.

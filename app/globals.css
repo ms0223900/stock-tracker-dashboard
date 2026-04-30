@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+/* 微調：讓長文區塊在深色背景上更易讀 */
+:root {
+  color-scheme: light dark;
+}

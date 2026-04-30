@@ -1,0 +1,13 @@
+---
+description: Next.js App Router conventions for the stock dashboard
+globs: **/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Next.js Conventions
+
+- Use App Router patterns under `app/`; keep UI components small and typed.
+- Prefer Server Actions or Route Handlers for operations that need secrets, including Telegram and Supabase service access.
+- Keep Yahoo Finance requests isolated in a typed helper so response parsing and error handling stay testable.
+- Treat the browser polling interval as MVP behavior; use Vercel Cron only for the advanced background-check path.
+- Do not expose server-only env vars through `NEXT_PUBLIC_*`.

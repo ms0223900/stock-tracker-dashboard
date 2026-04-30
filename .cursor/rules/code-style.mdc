@@ -1,0 +1,12 @@
+---
+description: General code style for this project
+alwaysApply: true
+---
+
+# Code Style
+
+- Write TypeScript with explicit domain types for stock quotes, watchlist rows, and notification results.
+- Keep validation close to user input and return friendly Traditional Chinese error messages.
+- Prefer readable functions over clever abstractions; extract helpers only when behavior is reused or risky.
+- Handle external API failures with typed errors and visible UI messages.
+- Keep MVP scope tight and document any intentional deferral in `docs/spec.md`.
