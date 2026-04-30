@@ -1,13 +1,61 @@
 ---
-description: Next.js App Router conventions for the stock dashboard
-globs: **/*.{ts,tsx}
+description: Next.js App Router, server boundaries, Yahoo Finance helper, and UI conventions for this MVP.
+globs: "**/*.{ts,tsx}"
 alwaysApply: false
 ---
 
-# Next.js Conventions
+# Next.js（App Router）
 
-- Use App Router patterns under `app/`; keep UI components small and typed.
-- Prefer Server Actions or Route Handlers for operations that need secrets, including Telegram and Supabase service access.
-- Keep Yahoo Finance requests isolated in a typed helper so response parsing and error handling stay testable.
-- Treat the browser polling interval as MVP behavior; use Vercel Cron only for the advanced background-check path.
-- Do not expose server-only env vars through `NEXT_PUBLIC_*`.
+## 何時套用
+
+- 編輯 `app/`、`*.ts`、`*.tsx` 或新增 Route Handlers、Server Actions、client 元件時。
+
+## 目錄與檔案慣例
+
+- **路由與版面**：`app/layout.tsx` 根版面；頁面放 `app/**/page.tsx`；API 放 `app/api/**/route.ts`。
+- **命名**：React 元件檔用 **PascalCase**；route、utility 用 **kebab-case** 目錄亦可，與現有 `app/` 一致即可。
+- **Server vs Client**：預設為 Server Component；需 `useState`、瀏覽器 API、或訂閱／輪詢時在檔案頂端 `'use client'`。
+
+## 機密與環境變數
+
+- **`NEXT_PUBLIC_*`**：僅放 **可公開** 的值（例如 Supabase **URL** 與 **anon key** 若產品設計允許在瀏覽器使用）。
+- **禁止**將 `SUPABASE_SERVICE_ROLE_KEY`、`TELEGRAM_BOT_TOKEN`、`TELEGRAM_CHAT_ID` 以前綴 `NEXT_PUBLIC_` 或任何方式暴露到 client bundle。
+- 需保密或特權的邏輯一律在 **Server Actions** 或 **Route Handlers** 執行。
+
+## 資料與 I/O 邊界
+
+- **Yahoo Finance**：使用 spec 之 endpoint `https://query1.finance.yahoo.com/v8/finance/chart/{symbol}`。
+  - 將 **fetch、JSON 解析、正規化** 收斂到 **單一 module**（例如 `lib/yahoo-finance.ts` 或 `app/lib/...`），回傳 **typed** 的 quote（含 symbol、價格、更新時間、high／low／open／volume 等 spec 欄位）。
+  - 使用 **合理 timeout**（例如 `AbortSignal.timeout`）避免掛死；失敗時拋出或回傳可對應 UI 的錯誤型別。
+- **不要**在多个元件內各自複製 fetch／parse；改 import 共用 helper。
+
+## Server Actions 與 Route Handlers
+
+- **寫入 watchlist、更新 last_price、觸發通知鏈** 等涉及 **service role** 或 **Telegram** 時，優先 **Route Handler**（`POST`/`GET` 明確）或 **Server Action**（表單／mutation），且 **驗證輸入**（見 `code-style.mdc`）。
+- Route Handler 回應使用 **`Response.json`** 或 `NextResponse`，**HTTP 狀態碼** 與 body 一致（例如 400 驗證失敗、502 上游股價失敗）。
+- **不要**在 Route Handler 內硬編碼 secret；一律 `process.env.*`，並在缺少必要 env 時回 **5xx 或 503** 與繁中訊息（勿回傳 secret）。
+
+## UI（Tailwind、Recharts、輪詢）
+
+- 使用 **Tailwind** utility；保持區塊語意（`main`、`section`、`aria-labelledby`）與基本無障礙。
+- **Recharts**：若實作當日走勢，將圖表抽成小型 client 元件，資料由 server 或 API 以 **typed props** 傳入。
+- **輪詢（MVP）**：若採前端定時重新取得股價，使用 `setInterval`（或 SWR／React Query 若專案引入）並注意 **cleanup**（`useEffect` return）；預設間隔可對照 spec **約 60 秒**。
+- **Vercel Cron**：屬選做路線；若新增 `vercel.json` cron，應 **保護** cron route（例如 `CRON_SECRET` header）並在文件中註明。
+
+## 效能與快取
+
+- 對 **即時股價** 的 fetch 預設 **不快取** 或 `cache: 'no-store'`，避免誤顯示舊價；若使用 `fetch` 預設快取行為，需明確註解與 `next` 的 revalidate 策略。
+
+## Do / Don't
+
+| Do | Don't |
+| --- | --- |
+| 機密邏輯留在 server | 在 client component 直接呼叫需 token 的 Telegram／service role |
+| 集中 Yahoo 解析於 typed helper | 在多處複製 chart API 解析 |
+| 驗證後再呼叫 Supabase／通知 | 信任 client 傳入的 symbol／target 未經 server 再驗證 |
+| 錯誤與 loading 狀態可從 UI 理解 | 靜默失敗或白屏 |
+
+## 參照
+
+- [`AGENTS.md`](AGENTS.md)、[`docs/spec.md`](docs/spec.md)
+- [`supabase.mdc`](supabase.mdc)、[`telegram.mdc`](telegram.mdc)

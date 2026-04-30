@@ -1,13 +1,64 @@
 ---
-description: Supabase data model and access rules for watchlist tracking
-globs: **/*.{ts,tsx,sql}
+description: Supabase watchlist schema, RLS, keys, and server-side access patterns for the stock watch MVP.
+globs: "**/*.{ts,tsx,sql}"
 alwaysApply: false
 ---
 
-# Supabase Rules
+# Supabase
 
-- Use a single MVP table named `watchlist` unless the spec changes.
-- Required fields: `id`, `symbol`, `target_price`, `is_notified`, `created_at`; optional fields: `last_price`, `notified_at`, `updated_at`.
-- Validate `symbol` and `target_price` before writes; invalid data must not reach Supabase.
-- After a successful Telegram notification, update `is_notified` and `notified_at` in the same logical flow.
-- Keep service-role keys server-side only; client code may use only the anon key with appropriate policies.
+## 何時套用
+
+- 任何讀寫 **`watchlist`**、schema／migration（`.sql`）、或使用 `@supabase/supabase-js` 的程式碼。
+
+## 資料表 `watchlist`（與 spec 對齊）
+
+| 欄位 | 說明 |
+| --- | --- |
+| `id` | UUID，主鍵 |
+| `symbol` | text，例如 `2330.TW` |
+| `target_price` | numeric，> 0 |
+| `last_price` | numeric，可 null；每次成功查價後可更新 |
+| `is_notified` | boolean，預設 `false` |
+| `notified_at` | timestamptz，可 null；**僅通知成功後**寫入 |
+| `created_at` | timestamptz，必填 |
+| `updated_at` | timestamptz，可 null |
+
+- **不要**在 spec 未列之情況下擅自新增欄位；若產品需要，先更新 [`docs/spec.md`](docs/spec.md) 與 migration。
+
+## 金鑰與執行環境
+
+- **瀏覽器（若使用）**：僅能使用 `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`，且必須有 **RLS** 保護，避免匿名使用者任意讀寫他人資料（MVP 若為單一 demo，仍應有 **最小 RLS**，例如僅允許 anon 對公開政策下 insert／select，或僅 server 寫入）。
+- **伺服器（Route Handler / Server Action）**：需要略過 RLS 或批次更新時，使用 **`SUPABASE_SERVICE_ROLE_KEY`**，且 **僅在 server** 建立 client；**禁止**匯入至 client bundle。
+- 缺少必要 env 時：**不要**默默以空 client 繼續；應回錯誤並記錄（server 端），對 UI 給繁中說明。
+
+## 寫入前驗證
+
+- **`symbol`**：必須通過與產品相同的完整代號規則（見 `code-style.mdc`），未通過則 **不執行 insert／update**。
+- **`target_price`**：必須為大於 0 的數字；拒絕 `NaN`、`0`、負數、非數字字串。
+- **`is_notified`**：新增追蹤時應為 **`false`**（或由 DB default 保證）。
+
+## 與通知流程一致
+
+- 更新 **`last_price`**：在成功取得股價後可寫回；失敗則不應覆寫為誤導值。
+- **`is_notified` / `notified_at`**：**僅在 Telegram 發送成功後**於同一邏輯流程更新（與 [`telegram.mdc`](telegram.mdc) 一致）；發送失敗時 **維持** `is_notified === false`。
+- **避免重複通知**：依賴 `is_notified`；若採 concurrent 更新，考慮 **條件式 update**（例如 `where is_notified = false`）或 transaction，避免雙重送出。
+
+## SQL 與 migration
+
+- 將 DDL／policy 變更放在版本可追蹤的 `.sql`（例如 `supabase/migrations/` 或專案約定目錄），並在 PR／說明中註明 **如何套用**。
+- 新增或修改 **RLS policy** 時，在註解中說明 **誰可 read／insert／update**（anon vs service role）。
+
+## Do / Don't
+
+| Do | Don't |
+| --- | --- |
+| service role 僅 server | 在 client 或 `NEXT_PUBLIC_*` 使用 service role |
+| 驗證通過再寫 DB | 將無效 symbol／target 寫入 `watchlist` |
+| 通知成功才設 `is_notified` | 先設 `true` 再呼叫 Telegram |
+| 變更 schema 時同步 spec + SQL | 只改 TS 不同步 DB 與文件 |
+
+## 參照
+
+- [`docs/spec.md`](docs/spec.md) §7–9、§10
+- [`AGENTS.md`](AGENTS.md)
+- [`telegram.mdc`](telegram.mdc)

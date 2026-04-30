@@ -1,12 +1,55 @@
 ---
-description: General code style for this project
+description: Cross-cutting TypeScript validation, errors, and docs for the stock watch MVP; always apply.
 alwaysApply: true
 ---
 
-# Code Style
+# Code Style（全域）
 
-- Write TypeScript with explicit domain types for stock quotes, watchlist rows, and notification results.
-- Keep validation close to user input and return friendly Traditional Chinese error messages.
-- Prefer readable functions over clever abstractions; extract helpers only when behavior is reused or risky.
-- Handle external API failures with typed errors and visible UI messages.
-- Keep MVP scope tight and document any intentional deferral in `docs/spec.md`.
+## 適用範圍
+
+- 所有程式與文件變更；與 Next / Supabase / Telegram 重疊處以對應 `.mdc` 為準，但本篇為預設底線。
+
+## 型別與資料模型
+
+- 為 **股價報價**、`watchlist` **列／寫入／讀取**、**通知結果**（成功／失敗／略過）定義 **explicit domain types**（例如 `type`／`interface`），避免在 UI 與 API 間傳裸 `unknown`。
+- **`any`**：禁止無理由使用；若不可避免，需 **註解原因**並盡快縮小範圍或用型別守衛收斂。
+- **常數與列舉**：錯誤文案 key、狀態（例如已通知）優先使用 `as const` 或小範圍 union，避免魔法字串散落。
+
+## 驗證與使用者訊息（繁中）
+
+- **驗證緊貼輸入邊界**：表單、Server Action 或 Route Handler 收到 body 時先驗證，**無效資料不寫入 Supabase**。
+- **股票代號**：僅接受完整台股格式（例如 `2330.TW`）；不符時使用 spec 約定之提示，例如：
+  - 「請輸入完整股票代號，例如 2330.TW」
+- **目標價**：必須為 **大於 0** 的數字；不符時例如：
+  - 「請輸入大於 0 的目標股價」
+- 同一錯誤情境盡量 **共用同一字串或常數**，避免多處文案漂移。
+
+## 外部服務與錯誤處理
+
+- Yahoo Finance、Supabase、Telegram 等呼叫應有 **typed error** 或 **明確錯誤分支**（例如自訂 `StockQuoteError` / 統一 `AppError` shape），禁止空 `catch`。
+- **UI**：失敗時顯示 **可讀繁中**；股價 API 失敗可對照 spec：「目前無法取得股價資料，請稍後再試」。
+- **不要**因單一 API 失敗讓整頁 uncaught exception；錯誤狀態應可被使用者理解並重試。
+
+## 程式風格
+
+- 偏好 **清楚函式與直線邏輯**；僅在重複或易錯時抽出 helper。
+- **MVP 範圍**：不為「優雅」引入新架構；與 [`docs/spec.md`](docs/spec.md) 抵觸時以 spec 為準。
+
+## 文件與 spec
+
+- 行為或驗收變更時 **同步更新** [`docs/spec.md`](docs/spec.md) 或 [`AGENTS.md`](AGENTS.md) 中「Current State／未決」等相關段落。
+- **刻意延後**的功能在 spec 中註記，避免代理誤以為遺漏。
+
+## Do / Don't（速查）
+
+| Do | Don't |
+| --- | --- |
+| 為 domain 資料定義型別並在邊界 parse／validate | 將未驗證的 `any` 直接寫入 DB |
+| 繁中、具體的錯誤訊息與空狀態 | 「發生錯誤」且無下一步 |
+| try/catch 或 Result 型處理外部 I/O | 吞掉例外或只 `console.log` |
+| 小步驟、可驗收的變更 | 同時重構多模組又改行為 |
+
+## 參照
+
+- 產品與驗收：[`docs/spec.md`](docs/spec.md)
+- 專案高階 context：[`AGENTS.md`](AGENTS.md)

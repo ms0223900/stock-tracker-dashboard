@@ -1,13 +1,68 @@
 ---
-description: Telegram notification behavior for target price alerts
-globs: **/*.{ts,tsx}
+description: Telegram Bot API usage, alert content, failure handling, and idempotency for target-price alerts.
+globs: "**/*.{ts,tsx}"
 alwaysApply: false
 ---
 
-# Telegram Rules
+# Telegram 達標通知
 
-- Send Telegram messages only after `currentPrice >= targetPrice` and `is_notified` is `false`.
-- Include stock symbol, current price, target price, and trigger time in every alert.
-- If sending fails, keep `is_notified` as `false` so the user can retry after fixing configuration.
-- Store `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` in environment variables.
-- Avoid duplicate notifications for the same watchlist row.
+## 何時套用
+
+- 任何呼叫 **Telegram Bot API**、`TELEGRAM_*` 環境變數或「達標 → 發送 → 更新 DB」流程的程式碼。
+
+## 環境變數
+
+- **`TELEGRAM_BOT_TOKEN`**：僅 server；絕對不可出現在 client、`NEXT_PUBLIC_*`、或提交的範例值。
+- **`TELEGRAM_CHAT_ID`**：同樣僅 server；若未來改為使用者可設定，仍需 server 驗證與储存策略，並更新 [`docs/spec.md`](docs/spec.md)。
+
+缺少任一變數時：應 **明確失敗**（回傳錯誤給呼叫端），**不要**送出空請求或寫入 `is_notified`。
+
+## 觸發條件（業務規則）
+
+- 僅當 **`last_price`（或當次查得之目前價）≥ `target_price`** 且 **`is_notified === false`** 時發送通知。
+- 已通知列（`is_notified === true`）**不得**再次發送相同追蹤之達標通知（除非產品另定「重置」流程並更新 spec）。
+
+## API 呼叫慣例
+
+- 使用官方 **HTTPS** Bot API：`https://api.telegram.org/bot<token>/sendMessage`（或其他方法若專案需要）。
+- **Method**：`POST`；`Content-Type: application/json`。
+- **Body**：至少 `chat_id`、`text`；可選 `parse_mode`（若使用 `MarkdownV2` / `HTML`，需正確 escape，**MVP 建議純文字**以降低失敗率）。
+- **Timeout**：設定合理逾時（與 Next.js fetch 一致）；逾時視為失敗，**不**更新 `is_notified`。
+- **HTTP 非 2xx 或 `ok: false`**：視為失敗；可記錄 `description`（server log），**不要**對使用者暴露 token。
+
+## 訊息內容（與 spec 對齊）
+
+每則提醒至少包含：
+
+- 股票代號（`symbol`）
+- 目前股價
+- 目標股價
+- 觸發時間（建議可讀時區，例如台灣本地字串或 ISO 附註）
+
+可參考 spec 範例格式（「股價達標提醒」標題等）；**保持繁中**、單則訊息簡短。
+
+## 與 Supabase 狀態一致
+
+- **順序**：建議先 **成功** `sendMessage`，再於同一請求／transaction 流程更新 `is_notified = true` 與 `notified_at = now()`。
+- 若採「先更新再發送」極易在發送失敗時誤標已通知；**禁止**在發送失敗時將 `is_notified` 設為 `true`。
+- 若需「至少發送一次」語意，應以 DB 條件更新或重試策略實作，並在 spec 中說明。
+
+## 重試與重複
+
+- MVP：**不要**對同一筆 watchlist 在短時間內無限重試轟炸 Telegram；失敗可留待下次排程／使用者重試查價。
+- 並發兩次檢查時，以 **`is_notified` 條件式 update** 或同等機制避免雙發（見 [`supabase.mdc`](supabase.mdc)）。
+
+## Do / Don't
+
+| Do | Don't |
+| --- | --- |
+| 僅 server 呼叫 Bot API | 在瀏覽器暴露 token 或 chat id |
+| 成功後才 `is_notified = true` | 發送失敗仍標記已通知 |
+| 訊息含 symbol、兩種價格、時間 | 僅寫「已達標」無具體數字 |
+| 處理非 2xx 與 timeout | 假設 Telegram 永遠成功 |
+
+## 參照
+
+- [`docs/spec.md`](docs/spec.md) §8、§9
+- [`AGENTS.md`](AGENTS.md)
+- [`supabase.mdc`](supabase.mdc)
