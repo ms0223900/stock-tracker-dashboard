@@ -30,6 +30,50 @@
 - **可選／加分**：同日走勢圖（Recharts）、前端約 60 秒輪詢、刪除追蹤、Vercel Cron 背景檢查。
 - **刻意不做**：登入與多使用者隔離、多股票完整管理、自動補 `.TW`、歷史股價庫存、技術分析與買賣建議、LINE、付費。
 
+## Engineering Principles｜程式設計原則
+
+這些原則是最高階的行為準則，適用於所有新增與修改；細節仍以 `code-style.mdc` 與各 domain rule 為準。
+
+### Clean Code
+
+- **命名即文件**：變數、函式、型別名稱能自我解釋意圖，不依賴 comment 補救（例如 `fetchStockQuote` 勝過 `getData`、`WatchlistRow` 勝過 `Row`）。
+- **函式單一層次**：一個函式只做一件事；閱讀函式時不需要在腦中切換多個抽象層。
+- **短小函式**：以「能否一眼讀完」為標準；若需滾動才能理解流程，考慮拆分。
+- **消除重複**：**DRY（Don't Repeat Yourself）**——相同邏輯出現兩次即應抽出；但 **不要** 為了 DRY 而過早抽象（YAGNI 原則）。
+- **顯式勝過隱式**：`return { ok: false, error: '股票代號格式錯誤' }` 優於 `return null`；讓錯誤路徑可被追蹤。
+
+### SOLID
+
+| 原則 | 在本專案的具體意義 |
+| --- | --- |
+| **S** Single Responsibility | 一個模組只負責一件事：查股價的 helper 不負責寫 DB；Telegram helper 不負責驗證格式 |
+| **O** Open/Closed | 新增功能（例如新通知管道）透過新增模組實作，**不** 修改既有 Telegram helper |
+| **L** Liskov Substitution | 若抽出介面（例如 `NotificationChannel`），任何實作必須可完整替換，不改變呼叫端行為 |
+| **I** Interface Segregation | 避免強迫模組依賴它不使用的介面；例如 Yahoo helper 不需要 import Supabase client |
+| **D** Dependency Inversion | 高層（通知流程）依賴抽象（`sendAlert(...)` 型態），不直接依賴底層（Telegram SDK 細節） |
+
+> MVP 階段不需要過度工程化，但命名與模組切割應 **從一開始就反映這些邊界**，以利日後擴充。
+
+### Clean Architecture（輕量版，適合 MVP）
+
+```
+app/api/          ← Delivery layer：接收 HTTP、驗證輸入、回傳 Response
+lib/ (或 app/lib) ← Application logic：查股價、存 watchlist、觸發通知的流程
+lib/              ← Infrastructure：Yahoo Finance fetch、Supabase client、Telegram API 呼叫
+```
+
+- **依賴方向**：`Delivery → Application → Infrastructure`；**禁止反向依賴**（Infrastructure 不 import Route Handler）。
+- **Domain types**（`StockQuote`、`WatchlistRow`、`NotificationResult`）定義在 `lib/types.ts` 或類似位置，**不依賴任何框架**。
+- 若目前 `app/` 內尚未完整分層，新增邏輯時 **優先往正確方向走**，不強求一次完美重構。
+
+### 其他關鍵原則
+
+- **YAGNI（You Aren't Gonna Need It）**：不寫「以後可能用到」的抽象；MVP 範圍外的功能只在 spec §12 留記錄。
+- **Fail Fast**：驗證在邊界執行，讓錯誤盡早且明確浮現，避免無效資料流進後續層。
+- **Separation of Concerns**：股價查詢、Supabase 寫入、Telegram 通知各自獨立，可個別測試與替換。
+- **Immutability 偏好**：盡量使用 `const`、不可變資料結構（例如 `readonly` array）；mutation 應明確且有限。
+- **Principle of Least Surprise**：函式行為與名稱一致；不在 `fetchQuote` 內偷偷寫 DB。
+
 ## Workflow｜建議工作流
 
 1. **讀 spec**：變更行為前先對 [`docs/spec.md`](docs/spec.md) 相關段落。
