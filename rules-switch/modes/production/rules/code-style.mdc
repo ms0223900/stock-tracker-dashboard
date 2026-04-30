@@ -1,0 +1,43 @@
+---
+description: PRODUCTION cross-cutting TypeScript—explicit domain types, zh-TW validation copy, typed errors, strict any policy.
+alwaysApply: true
+---
+
+# Code Style（PRODUCTION）
+
+## 型別與模型
+
+- **`StockQuote`、`WatchlistRow`、通知結果** 等须有 **explicit types**；禁止裸 `unknown` 流进 UI／API。
+- **`any`**：**禁止**無理由使用；若邊界收窄前必須使用，**註解原因** + **`TODO` 收斂期限**。
+- 錯誤與狀態字串優先 **`as const` / union**，避免魔法字串。
+
+## 驗證與繁中訊息
+
+- 驗證緊貼 **表單／Server Action／Route Handler** 邊界；**無效資料不寫 Supabase**。
+- 代號／目標價錯誤文案與 [`docs/spec.md`](docs/spec.md) 一致並盡量 **單一來源常數**。
+
+## 外部服務
+
+- Yahoo、Supabase、Telegram：**typed error** 或 **Result**；**禁止**空 `catch`。
+- UI：可讀繁中；股價失敗用 spec 建議句；單一 API 失敗**不得**拖垮整頁。
+
+## 測試與可維護
+
+- **純函数**（validation、quote normalize、門檻判定）應有 unit tests；新增／修改行為時 **同步**測試。
+- 若專案尚未裝測試框架：變更前先補最小設定或於 PR 註明 **阻擋項目** 並更新 spec。
+
+## MVP 與文件
+
+- 不超出 [`docs/spec.md`](docs/spec.md) §4 MVP；延後項寫入 §12。
+- 行為變更 → **同步更新** spec／`AGENTS.md` `Current State` 段落。
+
+## Do / Don't
+
+| Do | Don't |
+| --- | --- |
+| boundary parse + domain types | `any` 掩蓋錯誤 |
+| 明確錯誤分支 | `console.log` 吞錯 |
+
+## 參照
+
+- [`docs/spec.md`](docs/spec.md)、[`AGENTS.md`](AGENTS.md)
