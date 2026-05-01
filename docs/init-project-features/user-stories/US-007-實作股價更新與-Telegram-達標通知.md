@@ -18,12 +18,12 @@
 - Telegram 發送失敗時不標記為已通知
 
 **驗收條件**：
-- [ ] 目前股價低於目標股價時，不發送 Telegram，`is_notified` 維持 `false`
-- [ ] 目前股價大於或等於目標股價時，Telegram 收到通知
-- [ ] 通知內容包含股票代號、目前股價、目標股價與觸發時間
-- [ ] 同一筆追蹤資料已通知後不會再次發送
-- [ ] Telegram API 失敗時 `is_notified` 不變成 `true`
-- [ ] `last_price` 每次檢查後正確更新
+- [x] 目前股價低於目標股價時，不發送 Telegram，`is_notified` 維持 `false`
+- [x] 目前股價大於或等於目標股價時，Telegram 收到通知
+- [x] 通知內容包含股票代號、目前股價、目標股價與觸發時間
+- [x] 同一筆追蹤資料已通知後不會再次發送
+- [x] Telegram API 失敗時 `is_notified` 不變成 `true`
+- [x] `last_price` 每次檢查後正確更新
 
 **依賴關係**：US-005（Supabase）、US-006（Yahoo Finance 模組）、US-008（追蹤清單存在）
 **優先級**：P0
