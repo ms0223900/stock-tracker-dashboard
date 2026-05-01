@@ -1,4 +1,4 @@
-### US-002：建立 Yahoo Finance 股價查詢模組
+### US-006：建立 Yahoo Finance 股價查詢模組
 
 **作為** 開發者
 **我想要** 一個可重複使用的 Yahoo Finance API 查詢模組

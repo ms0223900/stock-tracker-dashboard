@@ -1,4 +1,4 @@
-### US-001：初始化 Supabase 資料庫與 watchlist 資料表
+### US-005：初始化 Supabase 資料庫與 watchlist 資料表
 
 **作為** 開發者
 **我想要** 在 Supabase 中建立 `watchlist` 資料表與專案連線設定

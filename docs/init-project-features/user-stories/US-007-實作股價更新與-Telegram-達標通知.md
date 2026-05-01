@@ -1,4 +1,4 @@
-### US-008：實作股價更新與 Telegram 達標通知
+### US-007：實作股價更新與 Telegram 達標通知
 
 **作為** 使用者
 **我想要** 系統自動比對目前股價與目標股價，並在達標時透過 Telegram 通知我
@@ -25,6 +25,6 @@
 - [ ] Telegram API 失敗時 `is_notified` 不變成 `true`
 - [ ] `last_price` 每次檢查後正確更新
 
-**依賴關係**：US-001（Supabase）、US-002（Yahoo Finance 模組）、US-005（追蹤清單存在）
+**依賴關係**：US-005（Supabase）、US-006（Yahoo Finance 模組）、US-008（追蹤清單存在）
 **優先級**：P0
 **相關功能**：spec §4 必做、§8 Telegram、§9 更新與通知流程
