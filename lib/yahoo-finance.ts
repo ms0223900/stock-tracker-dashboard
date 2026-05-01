@@ -45,15 +45,22 @@ function lastNonNull<T>(arr: (T | null)[]): T | undefined {
 }
 
 export async function fetchStockPrice(symbol: string): Promise<StockPrice> {
+  return fetchStockPriceRaw(symbol, `/api/yahoo-finance?symbol=${encodeURIComponent(symbol)}`);
+}
+
+/** Server-side version: calls Yahoo Finance directly (no CORS restriction). */
+export async function fetchStockPriceServer(symbol: string): Promise<StockPrice> {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1m&range=1d`;
+  return fetchStockPriceRaw(symbol, url);
+}
+
+async function fetchStockPriceRaw(symbol: string, url: string): Promise<StockPrice> {
 
   let response: Response;
   try {
-    response = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0" },
-    });
+    response = await fetch(url);
   } catch {
-    throw new Error("無法連線到 Yahoo Finance，請檢查網路連線");
+    throw new Error("無法連線到伺服器，請檢查網路連線");
   }
 
   if (!response.ok) {
@@ -62,7 +69,7 @@ export async function fetchStockPrice(symbol: string): Promise<StockPrice> {
 
   const json: YahooChartResponse = await response.json();
 
-  if (json.chart.error) {
+  if (json.chart?.error) {
     throw new Error(
       `股票代號「${symbol}」無效或無法取得資料：${json.chart.error.description}`,
     );

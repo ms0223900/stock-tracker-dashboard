@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { fetchStockPrice } from "@/lib/yahoo-finance";
+import { fetchStockPriceServer } from "@/lib/yahoo-finance";
 import { sendTelegramMessage } from "@/lib/telegram";
 
 interface WatchlistRow {
@@ -44,7 +44,7 @@ export async function GET() {
     // 2. Process each item
     for (const item of rows) {
       try {
-        const price = await fetchStockPrice(item.symbol);
+        const price = await fetchStockPriceServer(item.symbol);
 
         // Update last_price in DB
         await supabase
