@@ -14,10 +14,18 @@
 - Row Level Security 先採寬鬆策略（單使用者 Demo），允許 public anon key 讀寫
 
 **驗收條件**：
-- [ ] `watchlist` 資料表存在，包含 `id`(UUID)、`symbol`(text)、`target_price`(numeric)、`last_price`(numeric)、`is_notified`(boolean, default false)、`notified_at`(timestamptz)、`created_at`(timestamptz)、`updated_at`(timestamptz)
-- [ ] 可從 Next.js server 端使用 service role key 讀寫 watchlist
-- [ ] 可從 Next.js client 端使用 anon key 讀寫 watchlist
-- [ ] `.env.local` 已正確配置且不進版本控制
+- [x] `watchlist` 資料表存在，包含 `id`(UUID)、`symbol`(text)、`target_price`(numeric)、`last_price`(numeric)、`is_notified`(boolean, default false)、`notified_at`(timestamptz)、`created_at`(timestamptz)、`updated_at`(timestamptz)
+- [x] 可從 Next.js server 端使用 service role key 讀寫 watchlist
+- [x] 可從 Next.js client 端使用 anon key 讀寫 watchlist
+- [x] `.env.local` 已正確配置且不進版本控制
+
+**驗證說明**：
+- `supabase/migrations/001_create_watchlist.sql`：包含完整 schema（UUID PK、symbol、target_price、last_price、is_notified、notified_at、created_at、updated_at）與寬鬆 RLS policies（public anon key 可讀寫）
+- `lib/supabase/client.ts`：使用 `createBrowserClient`（anon / publishable key）
+- `lib/supabase/server.ts`：使用 `createServerClient` 搭配 cookies
+- `lib/supabase/middleware.ts`：Next.js middleware helper
+- `.env.local`：已配置 `NEXT_PUBLIC_SUPABASE_URL` 與 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`，已確認 `.gitignore` 排除 `.env*.local`
+- ⚠️ 需在 Supabase Dashboard 的 SQL Editor 中執行 migration SQL 以建立資料表
 
 **依賴關係**：無（第一個任務）
 **優先級**：P0
