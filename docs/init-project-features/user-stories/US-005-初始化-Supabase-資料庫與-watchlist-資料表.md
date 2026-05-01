@@ -29,7 +29,7 @@
 
 **待辦**：
 
-- [ ] 在 Supabase Dashboard 的 SQL Editor 中執行 migration SQL，以建立 watchlist 資料表
+- [x] 在 Supabase Dashboard 的 SQL Editor 中執行 migration SQL，以建立 watchlist 資料表
 
   **詳細步驟：**
 
