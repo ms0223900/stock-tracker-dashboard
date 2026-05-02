@@ -55,6 +55,19 @@ description: Breaks product requirements, module decomposition, and solution doc
    - 文件名稱使用 `{任務名稱}.md`；若已有編號規則，沿用既有規則，例如 `US-002-查看我們的日常文章列表.md`。
    - 若實際寫檔，放在使用者指定的資料夾；未指定時先詢問目標位置。
 
+5. **產出總覽 README（多 US 時）**
+   - 若此批輸出有 **3 個或以上**的 US 文件，必須在**同一個目錄**額外產出一份 `README.md`。
+   - 產出前先掃描目標目錄中**既有的 US 文件**，與新產出的合併計算，將新舊 US 一併納入 README.md。
+   - `README.md` 內容結構：
+     - **專案 / 功能簡述**：一句話說明這批 US 的目的。
+     - **US 一覽表**：表格列出所有 US 編號、標題、優先級、依賴關係、簡要說明（新舊合併）。
+     - **依賴關係圖**：以純文字箭頭圖（ASCII diagram）呈現 US 之間的依賴（包含新舊 US 的跨批次依賴）。
+     - **依賴說明**：逐條解釋各 US 的前置任務與原因。
+     - **建議開發順序**：將 US 分波次（Wave），說明哪些可平行、哪些需等待。
+   - 若目標目錄已有 `README.md`，直接**覆蓋更新**（重新計算新舊 US 的完整關係）。
+   - 若 US 數量為 **1~2 個**，不強制產出 README.md（但可選擇性產出）。
+   - 可參考 `docs/init-project-features/user-stories/README.md` 的格式與風格。
+
 ## User Story File Template / 文件模板
 
 ```markdown
@@ -124,3 +137,4 @@ description: Breaks product requirements, module decomposition, and solution doc
 - [ ] 驗收條件是可觀察、可測試的 checklist。
 - [ ] 依賴關係沒有循環或含糊描述。
 - [ ] 文件名稱清楚且方便後續追蹤。
+- [ ] 若 US 數量 >= 3，已產出對應的 `README.md` 總覽文件。

@@ -9,8 +9,10 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  ReferenceLine,
 } from "recharts";
 import { fetchStockPrice, type StockPrice } from "@/lib/yahoo-finance";
+import { formatPrice } from "@/lib/format";
 import { validateSymbol, validateTargetPrice } from "@/lib/validation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -19,6 +21,7 @@ interface WatchlistItem {
   symbol: string;
   target_price: number;
   last_price: number | null;
+  previousClose: number | null;
   is_notified: boolean;
   created_at: string;
 }
@@ -41,6 +44,14 @@ export default function HomePage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const supabase = createClient();
+
+  // ── Derived line color ──
+  const lineColor =
+    stockData === null || stockData.previousClose === null
+      ? "#a1a1aa"
+      : stockData.currentPrice >= stockData.previousClose
+        ? "#22c55e"
+        : "#ef4444";
 
   // ── Fetch watchlist on mount ──
   const fetchWatchlist = useCallback(async () => {
@@ -86,7 +97,13 @@ export default function HomePage() {
       const items = watchlistRef.current;
       if (items.length > 0) {
         const results = await Promise.allSettled(
-          items.map((item) => fetchStockPrice(item.symbol).then((d) => ({ id: item.id, price: d.currentPrice }))),
+          items.map((item) =>
+            fetchStockPrice(item.symbol).then((d) => ({
+              id: item.id,
+              price: d.currentPrice,
+              previousClose: d.previousClose,
+            })),
+          ),
         );
         setWatchlist((prev) =>
           prev.map((item) => {
@@ -94,7 +111,11 @@ export default function HomePage() {
               (r) => r.status === "fulfilled" && r.value.id === item.id,
             );
             if (result?.status === "fulfilled") {
-              return { ...item, last_price: result.value.price };
+              return {
+                ...item,
+                last_price: result.value.price,
+                previousClose: result.value.previousClose,
+              };
             }
             return item;
           }),
@@ -179,9 +200,6 @@ export default function HomePage() {
     date.toLocaleTimeString("zh-TW", { hour12: false });
 
   const formatNumber = (n: number) => n.toLocaleString("zh-TW");
-
-  const formatPrice = (n: number | null) =>
-    n !== null ? `$${n.toLocaleString("zh-TW", { minimumFractionDigits: 2 })}` : "—";
 
   return (
     <main className="relative isolate overflow-hidden">
@@ -282,9 +300,25 @@ export default function HomePage() {
                 <span className="text-xl font-semibold text-white">
                   {stockData.symbol}
                 </span>
-                <span className="text-3xl font-bold text-emerald-400">
+                <span className="text-3xl font-bold text-white">
                   {formatPrice(stockData.currentPrice)}
                 </span>
+                {stockData.previousClose !== null && stockData.change !== null && stockData.changePercent !== null && (
+                  <span
+                    className={`text-lg font-medium ${
+                      stockData.change > 0
+                        ? "text-emerald-400"
+                        : stockData.change < 0
+                          ? "text-red-400"
+                          : "text-zinc-400"
+                    }`}
+                  >
+                    {stockData.change > 0 ? "+" : ""}$
+                    {stockData.change.toFixed(2)} (
+                    {stockData.changePercent > 0 ? "+" : ""}
+                    {stockData.changePercent.toFixed(2)}%)
+                  </span>
+                )}
                 <span className="text-sm text-zinc-500">
                   更新於 {formatTime(stockData.updatedAt)}
                 </span>
@@ -368,13 +402,26 @@ export default function HomePage() {
                           ];
                         }}
                       />
+                      {stockData.previousClose !== null && (
+                        <ReferenceLine
+                          y={stockData.previousClose}
+                          stroke="#71717a"
+                          strokeDasharray="4 4"
+                          label={{
+                            value: `昨收 ${formatPrice(stockData.previousClose)}`,
+                            fill: "#71717a",
+                            fontSize: 12,
+                            position: "insideTopRight",
+                          }}
+                        />
+                      )}
                       <Line
                         type="monotone"
                         dataKey="price"
-                        stroke="#10b981"
+                        stroke={lineColor}
                         strokeWidth={2}
                         dot={false}
-                        activeDot={{ r: 4, fill: "#10b981" }}
+                        activeDot={{ r: 4, fill: lineColor }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -463,7 +510,17 @@ export default function HomePage() {
                         {formatPrice(item.target_price)}
                       </td>
                       <td className="py-3 pr-4">
-                        {formatPrice(item.last_price)}
+                        <span
+                          className={
+                            item.previousClose !== null && item.last_price !== null
+                              ? item.last_price >= item.previousClose
+                                ? "text-emerald-400"
+                                : "text-red-400"
+                              : "text-white"
+                          }
+                        >
+                          {formatPrice(item.last_price)}
+                        </span>
                       </td>
                       <td className="py-3 pr-4">
                         {item.is_notified ? (

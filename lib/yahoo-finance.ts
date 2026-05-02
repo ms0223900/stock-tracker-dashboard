@@ -6,6 +6,9 @@ export interface ChartPoint {
 export interface StockPrice {
   symbol: string;
   currentPrice: number;
+  previousClose: number | null;
+  change: number | null;
+  changePercent: number | null;
   high: number;
   low: number;
   open: number;
@@ -82,6 +85,13 @@ async function fetchStockPriceRaw(symbol: string, url: string): Promise<StockPri
 
   const quote = result.indicators.quote[0];
   const currentPrice = result.meta.regularMarketPrice ?? lastNonNull(quote.close);
+  const previousClose = result.meta.previousClose ?? null;
+  let change: number | null = null;
+  let changePercent: number | null = null;
+  if (previousClose !== null && currentPrice != null) {
+    change = currentPrice - previousClose;
+    changePercent = previousClose !== 0 ? (change / previousClose) * 100 : null;
+  }
   const high = lastNonNull(quote.high) ?? 0;
   const low = lastNonNull(quote.low) ?? 0;
   const open = lastNonNull(quote.open) ?? 0;
@@ -111,6 +121,9 @@ async function fetchStockPriceRaw(symbol: string, url: string): Promise<StockPri
   return {
     symbol,
     currentPrice,
+    previousClose,
+    change,
+    changePercent,
     high,
     low,
     open,
