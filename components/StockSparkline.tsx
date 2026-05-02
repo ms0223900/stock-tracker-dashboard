@@ -49,21 +49,19 @@ export default function StockSparkline({
 
 
   return (
-    <div className="h-20 w-full mb-lg">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={data} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-          <XAxis hide />
-          <YAxis hide domain={['dataMin', 'dataMax']} />
-          <Line
-            type="monotone"
-            dataKey="price"
-            stroke={color}
-            strokeWidth={2}
-            dot={false}
-            isAnimationActive={false}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
+    <ResponsiveContainer width="100%" height="100%">
+      <LineChart data={data} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+        <XAxis hide />
+        <YAxis hide domain={['dataMin', 'dataMax']} />
+        <Line
+          type="monotone"
+          dataKey="price"
+          stroke={color}
+          strokeWidth={2}
+          dot={false}
+          isAnimationActive={false}
+        />
+      </LineChart>
+    </ResponsiveContainer>
   );
 }
