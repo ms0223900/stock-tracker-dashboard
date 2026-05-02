@@ -1,10 +1,17 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "股價投資看板｜Stock Watch MVP",
+  title: "ZenTrade TW | 台股投資看板",
   description:
-    "輸入台股代號與目標價，查詢即時股價、儲存追蹤條件，達標時透過 Telegram 通知的課程用 MVP。",
+    "查詢即時台股股價、設定目標價、透過 Telegram 接收通知。",
 };
 
 export default function RootLayout({
@@ -13,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-TW">
-      <body className="min-h-screen bg-zinc-950 text-zinc-100 antialiased" suppressHydrationWarning>
+    <html lang="zh-TW" className={`${inter.variable}`}>
+      <body className="min-h-screen bg-background text-on-background antialiased">
         {children}
       </body>
     </html>
