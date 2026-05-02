@@ -9,206 +9,45 @@ import TargetPriceForm from "@/components/TargetPriceForm";
 import TelegramInfoCard from "@/components/TelegramInfoCard";
 import TopNavBar from "@/components/TopNavBar";
 import WatchlistCard from "@/components/WatchlistCard";
-import { POLL_INTERVAL_MS } from "@/lib/constants";
-import { createClient } from "@/lib/supabase/client";
-import { validateSymbol, validateTargetPrice } from "@/lib/validation";
-import { fetchStockPrice, type ChartPoint, type StockPrice } from "@/lib/yahoo-finance";
-import { useCallback, useEffect, useRef, useState } from "react";
-
-interface WatchlistItem {
-  id: string;
-  symbol: string;
-  target_price: number;
-  last_price: number | null;
-  previousClose: number | null;
-  is_notified: boolean;
-  created_at: string;
-}
+import { useStockQuery } from "@/hooks/useStockQuery";
+import { useWatchlist } from "@/hooks/useWatchlist";
+import { useWatchlistPolling } from "@/hooks/useWatchlistPolling";
 
 export default function HomePage() {
-  // ── Stock query states ──
-  const [symbol, setSymbol] = useState("");
-  const [stockData, setStockData] = useState<StockPrice | null>(null);
-  const [queryLoading, setQueryLoading] = useState(false);
-  const [queryError, setQueryError] = useState<string | null>(null);
-  const [symbolError, setSymbolError] = useState<string | null>(null);
+  const {
+    symbol,
+    stockData,
+    setStockData,
+    queryLoading,
+    queryError,
+    symbolError,
+    handleQuery,
+    handleSymbolKeyDown,
+    onSymbolChange,
+  } = useStockQuery();
 
-  // ── Watchlist states ──
-  const [targetPrice, setTargetPrice] = useState("");
-  const [targetPriceError, setTargetPriceError] = useState<string | null>(null);
-  const [watchlist, setWatchlist] = useState<WatchlistItem[]>([]);
-  const [watchlistLoading, setWatchlistLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const {
+    watchlist,
+    setWatchlist,
+    watchlistLoading,
+    fetchWatchlist,
+    targetPrice,
+    targetPriceError,
+    saving,
+    saveError,
+    deletingId,
+    handleSave,
+    handleDelete,
+    onTargetPriceChange,
+  } = useWatchlist();
 
-  // ── Sparkline chart data ──
-  const [chartDataMap, setChartDataMap] = useState<Record<string, ChartPoint[]>>({});
-
-  const supabase = createClient();
-
-  // ── Fetch watchlist from Supabase (used on mount, save, and delete) ──
-  const fetchWatchlist = useCallback(async () => {
-    setWatchlistLoading(true);
-    const { data, error } = await supabase
-      .from("watchlist")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Failed to fetch watchlist:", error.message);
-    } else if (data) {
-      setWatchlist(data as WatchlistItem[]);
-      watchlistRef.current = data satisfies WatchlistItem[];
-    }
-    setWatchlistLoading(false);
-  }, [supabase]);
-
-  // ── Auto-poll every 60 seconds ──
-  const stockDataRef = useRef(stockData);
-  stockDataRef.current = stockData;
-  const watchlistRef = useRef(watchlist);
-  watchlistRef.current = watchlist;
-
-  const pollWatchlist = async () => {
-    const currentSymbol = stockDataRef.current?.symbol;
-
-    // Silently re-fetch current stock price
-    if (currentSymbol) {
-      try {
-        const data = await fetchStockPrice(currentSymbol);
-        setStockData(data);
-      } catch {
-        // Silently ignore
-      }
-    }
-
-    // Update watchlist prices locally and store chart data
-    const items = watchlistRef.current;
-    if (items.length === 0) return;
-
-    const results = await Promise.allSettled(
-      items.map((item) =>
-        fetchStockPrice(item.symbol).then((d) => ({
-          id: item.id,
-          price: d.currentPrice,
-          previousClose: d.previousClose,
-          chartData: d.chartData,
-        })),
-      ),
-    );
-
-    setWatchlist((prev) =>
-      prev.map((item) => {
-        const result = results.find(
-          (r) => r.status === "fulfilled" && r.value.id === item.id,
-        );
-        if (result?.status === "fulfilled") {
-          return {
-            ...item,
-            last_price: result.value.price,
-            previousClose: result.value.previousClose,
-          };
-        }
-        return item;
-      }),
-    );
-
-    setChartDataMap((prev) => {
-      const updated = { ...prev };
-      for (const result of results) {
-        if (result.status === "fulfilled") {
-          updated[result.value.id] = result.value.chartData;
-        }
-      }
-      return updated;
-    });
-  };
-
-  // On mount: fetch watchlist from DB, THEN start polling
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-
-    const init = async () => {
-      await fetchWatchlist();     // 1. wait for watchlist data
-      pollWatchlist();            // 2. first poll immediately
-      interval = setInterval(pollWatchlist, POLL_INTERVAL_MS); // 3. then every 60s
-    };
-
-    init();
-
-    return () => clearInterval(interval);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ── Stock query handler ──
-  const handleQuery = async () => {
-    const symResult = validateSymbol(symbol);
-    setSymbolError(symResult.error);
-    if (!symResult.valid) return;
-
-    setQueryLoading(true);
-    setQueryError(null);
-    setStockData(null);
-
-    try {
-      const data = await fetchStockPrice(symbol.trim().toUpperCase());
-      setStockData(data);
-    } catch (err) {
-      setQueryError(
-        err instanceof Error
-          ? err.message
-          : "目前無法取得股價資料，請稍後再試",
-      );
-    } finally {
-      setQueryLoading(false);
-    }
-  };
-
-  // ── Save to watchlist handler ──
-  const handleSave = async () => {
-    const priceResult = validateTargetPrice(targetPrice);
-    setTargetPriceError(priceResult.error);
-    if (!priceResult.valid) return;
-
-    if (!stockData) return;
-
-    setSaving(true);
-    setSaveError(null);
-
-    const { error } = await supabase.from("watchlist").insert({
-      symbol: stockData.symbol,
-      target_price: Number(targetPrice),
-      last_price: stockData.currentPrice,
-    });
-
-    if (error) {
-      setSaveError(`儲存失敗：${error.message}`);
-      setSaving(false);
-      return;
-    }
-
-    setTargetPrice("");
-    setSaving(false);
-    await fetchWatchlist();
-  };
-
-  // ── Delete watchlist item ──
-  const handleDelete = async (id: string) => {
-    setDeletingId(id);
-    const { error } = await supabase.from("watchlist").delete().eq("id", id);
-
-    if (error) {
-      console.error("Delete failed:", error.message);
-    }
-
-    setDeletingId(null);
-    await fetchWatchlist();
-  };
-
-  // ── Handle Enter key ──
-  const handleSymbolKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleQuery();
-  };
+  const { chartDataMap } = useWatchlistPolling({
+    fetchWatchlist,
+    stockData,
+    setStockData,
+    watchlist,
+    setWatchlist,
+  });
 
   return (
     <>
@@ -220,10 +59,7 @@ export default function HomePage() {
             symbol={symbol}
             queryLoading={queryLoading}
             symbolError={symbolError}
-            onSymbolChange={(v) => {
-              setSymbol(v);
-              if (symbolError) setSymbolError(null);
-            }}
+            onSymbolChange={onSymbolChange}
             onQuery={handleQuery}
             onKeyDown={handleSymbolKeyDown}
           />
@@ -242,11 +78,8 @@ export default function HomePage() {
                     targetPriceError={targetPriceError}
                     saving={saving}
                     saveError={saveError}
-                    onTargetPriceChange={(v) => {
-                      setTargetPrice(v);
-                      if (targetPriceError) setTargetPriceError(null);
-                    }}
-                    onSave={handleSave}
+                    onTargetPriceChange={onTargetPriceChange}
+                    onSave={() => handleSave(stockData)}
                   />
                   <TelegramInfoCard />
                 </div>

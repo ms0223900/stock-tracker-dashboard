@@ -2,17 +2,8 @@
 
 import { formatPrice } from "@/lib/format";
 import type { ChartPoint } from "@/lib/yahoo-finance";
+import type { WatchlistItem } from "@/types/watchlist";
 import StockSparkline from "./StockSparkline";
-
-interface WatchlistItem {
-  id: string;
-  symbol: string;
-  target_price: number;
-  last_price: number | null;
-  previousClose: number | null;
-  is_notified: boolean;
-  created_at: string;
-}
 
 interface WatchlistCardProps {
   watchlist: WatchlistItem[];
