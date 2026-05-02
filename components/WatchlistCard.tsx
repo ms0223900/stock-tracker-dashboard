@@ -1,6 +1,7 @@
 "use client";
 
 import { formatPrice } from "@/lib/format";
+import type { ChartPoint } from "@/lib/yahoo-finance";
 import StockSparkline from "./StockSparkline";
 
 interface WatchlistItem {
@@ -17,7 +18,7 @@ interface WatchlistCardProps {
   watchlist: WatchlistItem[];
   watchlistLoading: boolean;
   deletingId: string | null;
-  priceHistories: Record<string, number[]>;
+  chartDataMap: Record<string, ChartPoint[]>;
   onDelete: (id: string) => void;
 }
 
@@ -44,7 +45,7 @@ export default function WatchlistCard({
   watchlist,
   watchlistLoading,
   deletingId,
-  priceHistories,
+  chartDataMap,
   onDelete,
 }: WatchlistCardProps) {
   return (
@@ -81,9 +82,7 @@ export default function WatchlistCard({
               item.last_price !== null &&
               item.last_price >= item.previousClose;
 
-            const sparkData = (priceHistories[item.id] || []).map(
-              (price) => ({ price }),
-            );
+            const sparkData = chartDataMap[item.id] || [];
             const trend =
               sparkData.length >= 2
                 ? sparkData[sparkData.length - 1].price >= sparkData[0].price

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { fetchStockPrice, type StockPrice } from "@/lib/yahoo-finance";
+import { fetchStockPrice, type StockPrice, type ChartPoint } from "@/lib/yahoo-finance";
 import { validateSymbol, validateTargetPrice } from "@/lib/validation";
 import { createClient } from "@/lib/supabase/client";
 import { POLL_INTERVAL_MS } from "@/lib/constants";
@@ -42,8 +42,8 @@ export default function HomePage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // ── Sparkline price histories ──
-  const [priceHistories, setPriceHistories] = useState<Record<string, number[]>>({});
+  // ── Sparkline chart data ──
+  const [chartDataMap, setChartDataMap] = useState<Record<string, ChartPoint[]>>({});
 
   const supabase = createClient();
 
@@ -96,6 +96,7 @@ export default function HomePage() {
               id: item.id,
               price: d.currentPrice,
               previousClose: d.previousClose,
+              chartData: d.chartData,
             })),
           ),
         );
@@ -115,14 +116,12 @@ export default function HomePage() {
           }),
         );
 
-        // Accumulate price histories for sparklines
-        setPriceHistories((prev) => {
+        // Store chart data for sparklines
+        setChartDataMap((prev) => {
           const updated = { ...prev };
           for (const result of results) {
             if (result.status === "fulfilled") {
-              const { id, price } = result.value;
-              const history = updated[id] || [];
-              updated[id] = [...history, price].slice(-20);
+              updated[result.value.id] = result.value.chartData;
             }
           }
           return updated;
@@ -249,7 +248,7 @@ export default function HomePage() {
                 watchlist={watchlist}
                 watchlistLoading={watchlistLoading}
                 deletingId={deletingId}
-                priceHistories={priceHistories}
+                chartDataMap={chartDataMap}
                 onDelete={handleDelete}
               />
 
@@ -263,7 +262,7 @@ export default function HomePage() {
                 watchlist={watchlist}
                 watchlistLoading={watchlistLoading}
                 deletingId={deletingId}
-                priceHistories={priceHistories}
+                chartDataMap={chartDataMap}
                 onDelete={handleDelete}
               />
 

@@ -1,7 +1,7 @@
 "use client";
 
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from "recharts";
-import { TWSE_UP, TWSE_DOWN, TWSE_NEUTRAL } from "@/lib/constants";
+import { TWSE_DOWN, TWSE_NEUTRAL, TWSE_UP } from "@/lib/constants";
+import { Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 
 interface StockSparklineProps {
   data: { price: number }[];
@@ -47,20 +47,23 @@ export default function StockSparkline({
     );
   }
 
+
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={data}>
-        <XAxis hide />
-        <YAxis hide />
-        <Line
-          type="monotone"
-          dataKey="price"
-          stroke={color}
-          strokeWidth={2}
-          dot={false}
-          isAnimationActive={false}
-        />
-      </LineChart>
-    </ResponsiveContainer>
+    <div className="h-20 w-full mb-lg">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+          <XAxis hide />
+          <YAxis hide domain={['dataMin', 'dataMax']} />
+          <Line
+            type="monotone"
+            dataKey="price"
+            stroke={color}
+            strokeWidth={2}
+            dot={false}
+            isAnimationActive={false}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
   );
 }

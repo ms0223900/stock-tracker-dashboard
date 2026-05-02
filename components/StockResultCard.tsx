@@ -1,18 +1,18 @@
 "use client";
 
+import { TWSE_DOWN, TWSE_NEUTRAL, TWSE_UP } from "@/lib/constants";
+import { formatPrice } from "@/lib/format";
+import type { StockPrice } from "@/lib/yahoo-finance";
 import {
-  LineChart,
+  CartesianGrid,
   Line,
+  LineChart,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  ReferenceLine,
 } from "recharts";
-import type { StockPrice } from "@/lib/yahoo-finance";
-import { formatPrice } from "@/lib/format";
-import { TWSE_UP, TWSE_DOWN, TWSE_NEUTRAL } from "@/lib/constants";
 
 interface StockResultCardProps {
   stockData: StockPrice | null;
