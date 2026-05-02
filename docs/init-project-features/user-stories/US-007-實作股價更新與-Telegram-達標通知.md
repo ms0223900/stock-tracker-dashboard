@@ -28,3 +28,66 @@
 **依賴關係**：US-005（Supabase）、US-006（Yahoo Finance 模組）、US-008（追蹤清單存在）
 **優先級**：P0
 **相關功能**：spec §4 必做、§8 Telegram、§9 更新與通知流程
+
+---
+
+## 設定步驟
+
+### 1. 建立 Telegram Bot
+
+1. 打開 Telegram，搜尋 **@BotFather**
+2. 輸入 `/newbot`，依指示建立機器人
+3. BotFather 會給一組 token（格式：`1234567890:ABCdef123...`）
+
+### 2. 取得 Chat ID
+
+1. 對你的 Bot 傳送任意訊息（如 `/start` 或 `Hello`）
+2. 在瀏覽器開啟 `https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates`
+3. 從 JSON 中找到 `"chat":{"id":123456789,...}`，該數字即為 Chat ID
+
+### 3. 設定環境變數
+
+編輯 `.env.local`，填入：
+
+```env
+TELEGRAM_BOT_TOKEN=你的機器人token
+TELEGRAM_CHAT_ID=你的chat_id
+```
+
+### 4. 測試連線
+
+```bash
+curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chat_id": "你的chat_id",
+    "text": "測試訊息"
+  }'
+```
+
+或用專用測試腳本：
+
+```bash
+node scripts/test-telegram.mjs
+```
+
+### 5. 執行價格檢查
+
+啟動 dev server 後，訪問 `/api/check-prices` 即可手動觸發完整流程（比對 watchlist 股價、更新 last_price、達標時發送 Telegram 通知）。
+
+### 6.（選擇性）設定 Vercel Cron 自動排程
+
+建立 `vercel.json`：
+
+```json
+{
+  "crons": [
+    {
+      "path": "/api/check-prices",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}
+```
+
+並在 Vercel Dashboard 設定 `TELEGRAM_BOT_TOKEN`、`TELEGRAM_CHAT_ID`、`NEXT_PUBLIC_SUPABASE_URL`、`SUPABASE_SERVICE_ROLE_KEY` 環境變數。
