@@ -1,19 +1,19 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { fetchStockPrice, type StockPrice, type ChartPoint } from "@/lib/yahoo-finance";
-import { validateSymbol, validateTargetPrice } from "@/lib/validation";
-import { createClient } from "@/lib/supabase/client";
-import { POLL_INTERVAL_MS } from "@/lib/constants";
-import TopNavBar from "@/components/TopNavBar";
-import SideNavBar from "@/components/SideNavBar";
 import MobileBottomNav from "@/components/MobileBottomNav";
+import NewsBanner from "@/components/NewsBanner";
+import SideNavBar from "@/components/SideNavBar";
 import StockQueryForm from "@/components/StockQueryForm";
 import StockResultCard from "@/components/StockResultCard";
 import TargetPriceForm from "@/components/TargetPriceForm";
 import TelegramInfoCard from "@/components/TelegramInfoCard";
+import TopNavBar from "@/components/TopNavBar";
 import WatchlistCard from "@/components/WatchlistCard";
-import NewsBanner from "@/components/NewsBanner";
+import { POLL_INTERVAL_MS } from "@/lib/constants";
+import { createClient } from "@/lib/supabase/client";
+import { validateSymbol, validateTargetPrice } from "@/lib/validation";
+import { fetchStockPrice, type ChartPoint, type StockPrice } from "@/lib/yahoo-finance";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface WatchlistItem {
   id: string;
@@ -47,7 +47,7 @@ export default function HomePage() {
 
   const supabase = createClient();
 
-  // ── Fetch watchlist on mount ──
+  // ── Fetch watchlist from Supabase (used on mount, save, and delete) ──
   const fetchWatchlist = useCallback(async () => {
     setWatchlistLoading(true);
     const { data, error } = await supabase
@@ -59,13 +59,10 @@ export default function HomePage() {
       console.error("Failed to fetch watchlist:", error.message);
     } else if (data) {
       setWatchlist(data as WatchlistItem[]);
+      watchlistRef.current = data satisfies WatchlistItem[];
     }
     setWatchlistLoading(false);
   }, [supabase]);
-
-  useEffect(() => {
-    fetchWatchlist();
-  }, [fetchWatchlist]);
 
   // ── Auto-poll every 60 seconds ──
   const stockDataRef = useRef(stockData);
@@ -73,64 +70,75 @@ export default function HomePage() {
   const watchlistRef = useRef(watchlist);
   watchlistRef.current = watchlist;
 
-  useEffect(() => {
-    const interval = setInterval(async () => {
-      const currentSymbol = stockDataRef.current?.symbol;
+  const pollWatchlist = async () => {
+    const currentSymbol = stockDataRef.current?.symbol;
 
-      // Silently re-fetch current stock price
-      if (currentSymbol) {
-        try {
-          const data = await fetchStockPrice(currentSymbol);
-          setStockData(data);
-        } catch {
-          // Silently ignore
+    // Silently re-fetch current stock price
+    if (currentSymbol) {
+      try {
+        const data = await fetchStockPrice(currentSymbol);
+        setStockData(data);
+      } catch {
+        // Silently ignore
+      }
+    }
+
+    // Update watchlist prices locally and store chart data
+    const items = watchlistRef.current;
+    if (items.length === 0) return;
+
+    const results = await Promise.allSettled(
+      items.map((item) =>
+        fetchStockPrice(item.symbol).then((d) => ({
+          id: item.id,
+          price: d.currentPrice,
+          previousClose: d.previousClose,
+          chartData: d.chartData,
+        })),
+      ),
+    );
+
+    setWatchlist((prev) =>
+      prev.map((item) => {
+        const result = results.find(
+          (r) => r.status === "fulfilled" && r.value.id === item.id,
+        );
+        if (result?.status === "fulfilled") {
+          return {
+            ...item,
+            last_price: result.value.price,
+            previousClose: result.value.previousClose,
+          };
+        }
+        return item;
+      }),
+    );
+
+    setChartDataMap((prev) => {
+      const updated = { ...prev };
+      for (const result of results) {
+        if (result.status === "fulfilled") {
+          updated[result.value.id] = result.value.chartData;
         }
       }
+      return updated;
+    });
+  };
 
-      // Update watchlist prices locally and accumulate price histories
-      const items = watchlistRef.current;
-      if (items.length > 0) {
-        const results = await Promise.allSettled(
-          items.map((item) =>
-            fetchStockPrice(item.symbol).then((d) => ({
-              id: item.id,
-              price: d.currentPrice,
-              previousClose: d.previousClose,
-              chartData: d.chartData,
-            })),
-          ),
-        );
-        setWatchlist((prev) =>
-          prev.map((item) => {
-            const result = results.find(
-              (r) => r.status === "fulfilled" && r.value.id === item.id,
-            );
-            if (result?.status === "fulfilled") {
-              return {
-                ...item,
-                last_price: result.value.price,
-                previousClose: result.value.previousClose,
-              };
-            }
-            return item;
-          }),
-        );
+  // On mount: fetch watchlist from DB, THEN start polling
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
 
-        // Store chart data for sparklines
-        setChartDataMap((prev) => {
-          const updated = { ...prev };
-          for (const result of results) {
-            if (result.status === "fulfilled") {
-              updated[result.value.id] = result.value.chartData;
-            }
-          }
-          return updated;
-        });
-      }
-    }, POLL_INTERVAL_MS);
+    const init = async () => {
+      await fetchWatchlist();     // 1. wait for watchlist data
+      pollWatchlist();            // 2. first poll immediately
+      interval = setInterval(pollWatchlist, POLL_INTERVAL_MS); // 3. then every 60s
+    };
+
+    init();
 
     return () => clearInterval(interval);
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Stock query handler ──
   const handleQuery = async () => {
