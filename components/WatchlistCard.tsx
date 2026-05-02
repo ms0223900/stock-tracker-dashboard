@@ -137,8 +137,6 @@ export default function WatchlistCard({
                   <StockSparkline
                     data={sparkData}
                     trend={trend}
-                    width={100}
-                    height={40}
                   />
                 </div>
 
