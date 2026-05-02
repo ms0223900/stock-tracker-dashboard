@@ -1,6 +1,6 @@
 "use client";
 
-import { LineChart, Line, ResponsiveContainer } from "recharts";
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from "recharts";
 import { TWSE_UP, TWSE_DOWN, TWSE_NEUTRAL } from "@/lib/constants";
 
 interface StockSparklineProps {
@@ -50,6 +50,8 @@ export default function StockSparkline({
   return (
     <ResponsiveContainer width="100%" height="100%">
       <LineChart data={data}>
+        <XAxis hide />
+        <YAxis hide />
         <Line
           type="monotone"
           dataKey="price"

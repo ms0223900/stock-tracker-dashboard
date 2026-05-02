@@ -1,7 +1,6 @@
 "use client";
 
 import { formatPrice } from "@/lib/format";
-import { TWSE_NEUTRAL } from "@/lib/constants";
 import StockSparkline from "./StockSparkline";
 
 interface WatchlistItem {
@@ -94,15 +93,15 @@ export default function WatchlistCard({
 
             const statusBadge = item.is_notified
               ? {
-                  text: "Triggered",
-                  className:
-                    "bg-green-50 text-twse-down border-green-100",
-                }
+                text: "Triggered",
+                className:
+                  "bg-green-50 text-twse-down border-green-100",
+              }
               : {
-                  text: "Waiting",
-                  className:
-                    "bg-primary-fixed text-primary-fixed-variant border-primary-fixed-dim",
-                };
+                text: "Waiting",
+                className:
+                  "bg-primary-fixed text-primary-fixed-variant border-primary-fixed-dim",
+              };
 
             return (
               <div
@@ -146,7 +145,7 @@ export default function WatchlistCard({
                     <p className="text-label-caps text-outline mb-xs">
                       TARGET
                     </p>
-                    <p className="text-data-mono text-body-md">
+                    <p className="text-data-mono">
                       {formatPrice(item.target_price)}
                     </p>
                   </div>
@@ -161,13 +160,12 @@ export default function WatchlistCard({
                         {statusBadge.text}
                       </span>
                       <span
-                        className={`text-data-mono text-body-md ${
-                          item.last_price !== null
-                            ? isUp
-                              ? "text-twse-up"
-                              : "text-twse-down"
-                            : "text-on-surface"
-                        }`}
+                        className={`text-data-mono ${item.last_price !== null
+                          ? isUp
+                            ? "text-twse-up"
+                            : "text-twse-down"
+                          : "text-on-surface"
+                          }`}
                       >
                         {formatPrice(item.last_price)}
                       </span>
