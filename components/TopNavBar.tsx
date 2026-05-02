@@ -16,11 +16,11 @@ export default function TopNavBar() {
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between px-6 py-3 w-full bg-surface-container-lowest border-b border-outline-variant">
       <div className="flex items-center gap-lg">
-        <span className="text-headline-md text-primary font-semibold tracking-tight">
+        <span className="text-headline-md text-primary">
           {BRAND_NAME}
         </span>
         <div className="relative hidden lg:block w-96">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">
             search
           </span>
           <input
@@ -30,7 +30,7 @@ export default function TopNavBar() {
           />
         </div>
         <div className="flex items-center gap-2 px-3 py-1.5 bg-surface-container-high border border-outline-variant rounded-full">
-          <span className="material-symbols-outlined text-sm text-primary animate-spin text-[18px]">
+          <span className="material-symbols-outlined text-sm text-primary animate-spin">
             sync
           </span>
           <span className="text-label-caps text-on-surface-variant">

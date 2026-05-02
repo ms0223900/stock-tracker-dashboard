@@ -258,7 +258,7 @@ export default function HomePage() {
           )}
 
           {!stockData && !queryError && (
-            <div className="mt-lg">
+            <div className="grid grid-cols-12 gap-lg mt-lg">
               <WatchlistCard
                 watchlist={watchlist}
                 watchlistLoading={watchlistLoading}
@@ -267,9 +267,7 @@ export default function HomePage() {
                 onDelete={handleDelete}
               />
 
-              <div className="mt-lg">
-                <NewsBanner />
-              </div>
+              <NewsBanner />
             </div>
           )}
         </main>

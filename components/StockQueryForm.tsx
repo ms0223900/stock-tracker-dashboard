@@ -24,7 +24,7 @@ export default function StockQueryForm({
           QUICK QUERY
         </label>
         <div className="relative">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">
+          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">
             search
           </span>
           <input
