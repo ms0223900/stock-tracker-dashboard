@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { BRAND_NAME } from "@/lib/constants";
+import Image from "next/image";
+import { useEffect, useState } from "react";
 
 export default function TopNavBar() {
   const [countdown, setCountdown] = useState(60);
@@ -16,7 +17,8 @@ export default function TopNavBar() {
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between px-6 py-3 w-full bg-surface-container-lowest border-b border-outline-variant">
       <div className="flex items-center gap-lg">
-        <span className="text-headline-md text-primary">
+        <Image src="/favicon.ico" alt={BRAND_NAME} width={48} height={48} />
+        <span className="text-headline-md text-primary font-black">
           {BRAND_NAME}
         </span>
         <div className="relative hidden lg:block w-96">

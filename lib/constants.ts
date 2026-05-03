@@ -5,7 +5,7 @@ export const TWSE_DOWN = "#008A3B";
 export const TWSE_NEUTRAL = "#717783";
 
 // ── Brand ──
-export const BRAND_NAME = "ZenTrade TW";
+export const BRAND_NAME = "Stock Tracker";
 
 // ── Polling ──
 export const POLL_INTERVAL_MS = 60000;
