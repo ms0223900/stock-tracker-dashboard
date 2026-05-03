@@ -4,10 +4,11 @@
     {
       "type": "frame",
       "id": "i2rd8",
-      "x": 0,
+      "x": -192.5,
       "y": 0,
       "name": "股價看板",
-      "width": 1440,
+      "width": 1920,
+      "height": 1408,
       "fill": "$--background",
       "layout": "vertical",
       "children": [
@@ -597,8 +598,8 @@
                       "id": "ohg3J",
                       "name": "chartArea",
                       "width": "fill_container",
-                      "height": 220,
-                      "fill": "$--card-muted",
+                      "height": 312,
+                      "fill": "$--card",
                       "cornerRadius": 14,
                       "stroke": {
                         "align": "inside",
@@ -606,19 +607,281 @@
                         "fill": "$--border"
                       },
                       "layout": "vertical",
-                      "gap": 8,
+                      "gap": 10,
                       "padding": 16,
-                      "justifyContent": "center",
-                      "alignItems": "center",
                       "children": [
+                        {
+                          "type": "frame",
+                          "id": "VD5tM",
+                          "name": "chartTop",
+                          "width": "fill_container",
+                          "justifyContent": "space_between",
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "text",
+                              "id": "XI2ml",
+                              "name": "metaLeft",
+                              "fill": "$--muted-foreground",
+                              "content": "上次更新：2026-05-03 14:30",
+                              "fontFamily": "$--font-secondary",
+                              "fontSize": 11,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "frame",
+                              "id": "edyIV",
+                              "name": "pillRow",
+                              "gap": 2,
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "szjeC",
+                                  "name": "p1",
+                                  "fill": "$--muted-foreground",
+                                  "content": "1D",
+                                  "fontFamily": "$--font-secondary",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "jAdGh",
+                                  "name": "p2",
+                                  "fill": "$--muted-foreground",
+                                  "content": "1M",
+                                  "fontFamily": "$--font-secondary",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "thH4L",
+                                  "name": "p3",
+                                  "fill": "$--muted-foreground",
+                                  "content": "3M",
+                                  "fontFamily": "$--font-secondary",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "C6CJo",
+                                  "name": "ytdPill",
+                                  "fill": "$--secondary",
+                                  "cornerRadius": 999,
+                                  "padding": [
+                                    6,
+                                    10
+                                  ],
+                                  "alignItems": "center",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "iT2Wi",
+                                      "name": "ytdTxt",
+                                      "fill": "$--foreground",
+                                      "content": "YTD",
+                                      "fontFamily": "$--font-secondary",
+                                      "fontSize": 12,
+                                      "fontWeight": "600"
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "m85ipT",
+                                  "name": "p5",
+                                  "fill": "$--muted-foreground",
+                                  "content": "1Y",
+                                  "fontFamily": "$--font-secondary",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "VA1u1",
+                                  "name": "p6",
+                                  "fill": "$--muted-foreground",
+                                  "content": "5Y",
+                                  "fontFamily": "$--font-secondary",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Okqs1",
+                          "name": "chartBody",
+                          "clip": true,
+                          "width": "fill_container",
+                          "height": 200,
+                          "fill": "$--card",
+                          "cornerRadius": 10,
+                          "layout": "none",
+                          "children": [
+                            {
+                              "type": "path",
+                              "id": "fquTf",
+                              "layoutPosition": "absolute",
+                              "x": 0,
+                              "y": 0,
+                              "name": "avgP",
+                              "geometry": "M0 106l1200 0",
+                              "fill": "#00000000",
+                              "width": 1200,
+                              "height": 200,
+                              "stroke": {
+                                "thickness": 1,
+                                "cap": "round",
+                                "fill": "$--chart-grid"
+                              }
+                            },
+                            {
+                              "type": "path",
+                              "id": "wusas",
+                              "layoutPosition": "absolute",
+                              "x": 0,
+                              "y": 0,
+                              "name": "peakP",
+                              "geometry": "M0 28l1200 0",
+                              "fill": "#00000000",
+                              "width": 1200,
+                              "height": 200,
+                              "stroke": {
+                                "thickness": 1,
+                                "cap": "round",
+                                "fill": "$--chart-grid"
+                              }
+                            },
+                            {
+                              "type": "path",
+                              "id": "N7Sns",
+                              "layoutPosition": "absolute",
+                              "x": 0,
+                              "y": 0,
+                              "name": "areaFill",
+                              "geometry": "M0 128c22-12 36 15 58-8 14-16 28-2 46-14 28-18 46 16 68 5 32-10 50 32 74 40 22 15 46 20 68 5 20-13 32 27 52 32 20 6 32-28 54-22 28 6 50-15 72-10 28 5 42-28 64-51 30-32 54-16 76-45 22-28 48 1 72-7 24-8 40-39 60-21 22 20 42 44 64 28 22-16 38-37 60-6 24 33 46 37 66 49 22 13 44 9 64-9 22-20 44-32 66-8 22 24 44 2 66 18 20 14 38-12 50-2l0 98-1200 0z",
+                              "fill": {
+                                "type": "gradient",
+                                "gradientType": "linear",
+                                "enabled": true,
+                                "rotation": 0,
+                                "size": {
+                                  "height": 1
+                                },
+                                "colors": [
+                                  {
+                                    "color": "#1fb86e66",
+                                    "position": 0
+                                  },
+                                  {
+                                    "color": "#1fb86e1f",
+                                    "position": 0.45
+                                  },
+                                  {
+                                    "color": "#1fb86e00",
+                                    "position": 1
+                                  }
+                                ]
+                              },
+                              "width": 1200,
+                              "height": 200
+                            },
+                            {
+                              "type": "path",
+                              "id": "OfCxq",
+                              "layoutPosition": "absolute",
+                              "x": 0,
+                              "y": 0,
+                              "name": "lineSt",
+                              "geometry": "M0 128c22-12 36 15 58-8 14-16 28-2 46-14 28-18 46 16 68 5 32-10 50 32 74 40 22 15 46 20 68 5 20-13 32 27 52 32 20 6 32-28 54-22 28 6 50-15 72-10 28 5 42-28 64-51 30-32 54-16 76-45 22-28 48 1 72-7 24-8 40-39 60-21 22 20 42 44 64 28 22-16 38-37 60-6 24 33 46 37 66 49 22 13 44 9 64-9 22-20 44-32 66-8 22 24 44 2 66 18 20 14 38-12 50-2",
+                              "fill": "#00000000",
+                              "width": 1200,
+                              "height": 200,
+                              "stroke": {
+                                "align": "center",
+                                "thickness": 2.5,
+                                "join": "round",
+                                "cap": "round",
+                                "fill": "$--chart-green"
+                              }
+                            },
+                            {
+                              "type": "text",
+                              "id": "UPqQf",
+                              "layoutPosition": "absolute",
+                              "x": 4,
+                              "y": 92,
+                              "name": "avgLbl",
+                              "fill": "$--muted-foreground",
+                              "content": "AVG",
+                              "fontFamily": "$--font-secondary",
+                              "fontSize": 10,
+                              "fontWeight": "600"
+                            },
+                            {
+                              "type": "text",
+                              "id": "QoGfJ",
+                              "layoutPosition": "absolute",
+                              "x": 720,
+                              "y": 0,
+                              "name": "hiLbl",
+                              "fill": "$--muted-foreground",
+                              "content": "1,210",
+                              "fontFamily": "$--font-secondary",
+                              "fontSize": 11,
+                              "fontWeight": "500"
+                            },
+                            {
+                              "type": "text",
+                              "id": "o8ULO",
+                              "layoutPosition": "absolute",
+                              "x": 350,
+                              "y": 184,
+                              "name": "loLbl",
+                              "fill": "$--muted-foreground",
+                              "content": "1,198",
+                              "fontFamily": "$--font-secondary",
+                              "fontSize": 11,
+                              "fontWeight": "500"
+                            },
+                            {
+                              "type": "ellipse",
+                              "id": "feG06",
+                              "layoutPosition": "absolute",
+                              "x": 760,
+                              "y": 28,
+                              "name": "dotHi",
+                              "fill": "$--chart-green",
+                              "width": 7,
+                              "height": 7
+                            },
+                            {
+                              "type": "ellipse",
+                              "id": "LyK5j",
+                              "layoutPosition": "absolute",
+                              "x": 363,
+                              "y": 185,
+                              "name": "dotLo",
+                              "fill": "$--chart-green",
+                              "width": 7,
+                              "height": 7
+                            }
+                          ]
+                        },
                         {
                           "type": "text",
                           "id": "FO6Sx",
                           "name": "chartHint",
                           "fill": "$--muted-foreground",
-                          "content": "當日走勢折線圖（Recharts）",
+                          "content": "當日走勢（示意）· Recharts AreaChart",
                           "fontFamily": "$--font-secondary",
-                          "fontSize": 14,
+                          "fontSize": 12,
                           "fontWeight": "normal"
                         },
                         {
@@ -626,9 +889,9 @@
                           "id": "TTt2h",
                           "name": "chartSub",
                           "fill": "$--muted-foreground",
-                          "content": "資料來源：Yahoo Finance",
+                          "content": "漲跌區間標示可套用台股紅漲綠跌 · Yahoo Finance",
                           "fontFamily": "$--font-secondary",
-                          "fontSize": 12,
+                          "fontSize": 11,
                           "fontWeight": "normal"
                         }
                       ]
@@ -968,22 +1231,61 @@
                               "type": "frame",
                               "id": "IGNgA",
                               "name": "wl1Spark",
+                              "clip": true,
                               "width": "fill_container",
                               "height": 56,
-                              "fill": "$--card-muted",
+                              "fill": "$--card",
                               "cornerRadius": 10,
-                              "justifyContent": "center",
-                              "alignItems": "center",
+                              "layout": "none",
                               "children": [
                                 {
-                                  "type": "text",
-                                  "id": "i3RrTf",
-                                  "name": "wl1SparkTxt",
-                                  "fill": "$--muted-foreground",
-                                  "content": "sparkline",
-                                  "fontFamily": "$--font-secondary",
-                                  "fontSize": 12,
-                                  "fontWeight": "normal"
+                                  "type": "path",
+                                  "id": "gO0tp",
+                                  "layoutPosition": "absolute",
+                                  "x": 0,
+                                  "y": 0,
+                                  "name": "sp1Area",
+                                  "geometry": "M0 42c46-8 75 2 113-12 40-13 70-5 107-10 40-5 73 7 110 2 40-5 73 12 110 6 37-6 70-4 107-10 26-4 43 4 53 2l0 36-600 0z",
+                                  "fill": {
+                                    "type": "gradient",
+                                    "gradientType": "linear",
+                                    "enabled": true,
+                                    "rotation": 0,
+                                    "size": {
+                                      "height": 1
+                                    },
+                                    "colors": [
+                                      {
+                                        "color": "#eb00004a",
+                                        "position": 0
+                                      },
+                                      {
+                                        "color": "#eb000000",
+                                        "position": 1
+                                      }
+                                    ]
+                                  },
+                                  "width": 600,
+                                  "height": 56
+                                },
+                                {
+                                  "type": "path",
+                                  "id": "c2dEOV",
+                                  "layoutPosition": "absolute",
+                                  "x": 0,
+                                  "y": 0,
+                                  "name": "sp1Line",
+                                  "geometry": "M0 42c46-8 75 2 113-12 40-13 70-5 107-10 40-5 73 7 110 2 40-5 73 12 110 6 37-6 70-4 107-10 26-4 43 4 53 2",
+                                  "fill": "#00000000",
+                                  "width": 600,
+                                  "height": 56,
+                                  "stroke": {
+                                    "align": "center",
+                                    "thickness": 2,
+                                    "join": "round",
+                                    "cap": "round",
+                                    "fill": "$--twse-up"
+                                  }
                                 }
                               ]
                             },
@@ -1168,22 +1470,61 @@
                               "type": "frame",
                               "id": "hhk87",
                               "name": "wl2Spark",
+                              "clip": true,
                               "width": "fill_container",
                               "height": 56,
-                              "fill": "$--card-muted",
+                              "fill": "$--card",
                               "cornerRadius": 10,
-                              "justifyContent": "center",
-                              "alignItems": "center",
+                              "layout": "none",
                               "children": [
                                 {
-                                  "type": "text",
-                                  "id": "r0GuPp",
-                                  "name": "wl2SparkTxt",
-                                  "fill": "$--muted-foreground",
-                                  "content": "sparkline",
-                                  "fontFamily": "$--font-secondary",
-                                  "fontSize": 12,
-                                  "fontWeight": "normal"
+                                  "type": "path",
+                                  "id": "FWVZI",
+                                  "layoutPosition": "absolute",
+                                  "x": 0,
+                                  "y": 0,
+                                  "name": "sp2Area",
+                                  "geometry": "M0 18c40 2 70-2 107 4 40 6 73 2 110 8 40 7 73 2 110 8 40 6 73-3 110 4 36 7 73-2 110 3 26 4 43-3 53-1l0 12-600 0z",
+                                  "fill": {
+                                    "type": "gradient",
+                                    "gradientType": "linear",
+                                    "enabled": true,
+                                    "rotation": 0,
+                                    "size": {
+                                      "height": 1
+                                    },
+                                    "colors": [
+                                      {
+                                        "color": "#008a3b4a",
+                                        "position": 0
+                                      },
+                                      {
+                                        "color": "#008a3b00",
+                                        "position": 1
+                                      }
+                                    ]
+                                  },
+                                  "width": 600,
+                                  "height": 56
+                                },
+                                {
+                                  "type": "path",
+                                  "id": "wJ3RH",
+                                  "layoutPosition": "absolute",
+                                  "x": 0,
+                                  "y": 0,
+                                  "name": "sp2Line",
+                                  "geometry": "M0 18c40 2 70-2 107 4 40 6 73 2 110 8 40 7 73 2 110 8 40 6 73-3 110 4 36 7 73-2 110 3 26 4 43-3 53-1",
+                                  "fill": "#00000000",
+                                  "width": 600,
+                                  "height": 56,
+                                  "stroke": {
+                                    "align": "center",
+                                    "thickness": 2,
+                                    "join": "round",
+                                    "cap": "round",
+                                    "fill": "$--twse-down"
+                                  }
                                 }
                               ]
                             },
@@ -1524,6 +1865,35 @@
           "value": "#1a3550",
           "theme": {
             "mode": "dark"
+          }
+        }
+      ]
+    },
+    "--twse-down": {
+      "type": "color",
+      "value": "#008a3b"
+    },
+    "--twse-up": {
+      "type": "color",
+      "value": "#eb0000"
+    },
+    "--chart-green": {
+      "type": "color",
+      "value": "#1fb86e"
+    },
+    "--chart-grid": {
+      "type": "color",
+      "value": [
+        {
+          "value": "#4a5568",
+          "theme": {
+            "mode": "dark"
+          }
+        },
+        {
+          "value": "#d1d5db",
+          "theme": {
+            "mode": "light"
           }
         }
       ]

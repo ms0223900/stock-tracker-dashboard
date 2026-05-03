@@ -1,18 +1,24 @@
 "use client";
 
+import { useMemo } from "react";
+
 import { TWSE_DOWN, TWSE_NEUTRAL, TWSE_UP } from "@/lib/constants";
 import { formatPrice } from "@/lib/format";
 import type { StockPrice } from "@/lib/yahoo-finance";
 import {
-  CartesianGrid,
-  Line,
-  LineChart,
+  Area,
+  AreaChart,
+  ReferenceDot,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
+
+const CHART_PERIODS = ["1D", "1M", "3M", "YTD", "1Y", "5Y"] as const;
+
+type ChartRow = { idx: number; time: Date; price: number };
 
 interface StockResultCardProps {
   stockData: StockPrice | null;
@@ -23,6 +29,38 @@ export default function StockResultCard({
   stockData,
   queryError,
 }: StockResultCardProps) {
+  const chartSeries: ChartRow[] = useMemo(() => {
+    if (!stockData?.chartData?.length) return [];
+    return stockData.chartData.map((p, idx) => ({
+      idx,
+      time: p.time,
+      price: p.price,
+    }));
+  }, [stockData]);
+
+  const { avgPrice, maxEntry, minEntry } = useMemo(() => {
+    if (chartSeries.length === 0) {
+      return {
+        avgPrice: 0,
+        maxEntry: null as ChartRow | null,
+        minEntry: null as ChartRow | null,
+      };
+    }
+    const sum = chartSeries.reduce((s, d) => s + d.price, 0);
+    const maxEntry = chartSeries.reduce((a, b) => (b.price > a.price ? b : a));
+    const minEntry = chartSeries.reduce((a, b) => (b.price < a.price ? b : a));
+    return {
+      avgPrice: sum / chartSeries.length,
+      maxEntry,
+      minEntry,
+    };
+  }, [chartSeries]);
+
+  const gradientId = useMemo(() => {
+    if (!stockData) return "price-area";
+    return `price-area-${stockData.symbol.replace(/[^a-zA-Z0-9]/g, "-")}-${stockData.updatedAt.getTime()}`;
+  }, [stockData]);
+
   // Error state
   if (queryError) {
     return (
@@ -44,6 +82,16 @@ export default function StockResultCard({
 
   const formatTime = (date: Date) =>
     date.toLocaleTimeString("zh-TW", { hour12: false });
+
+  const formatUpdatedLabel = (date: Date) =>
+    date.toLocaleString("zh-TW", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
 
   const formatNumber = (n: number) => n.toLocaleString("zh-TW");
 
@@ -83,85 +131,140 @@ export default function StockResultCard({
               </span>
             </div>
           )}
-          <span className="text-body-sm text-outline">
-            Updated at {formatTime(stockData.updatedAt)}
-          </span>
+          {chartSeries.length === 0 ? (
+            <span className="text-body-sm text-outline">
+              更新於 {formatTime(stockData.updatedAt)}
+            </span>
+          ) : null}
         </div>
       </div>
 
       {/* Chart */}
-      {stockData.chartData.length > 0 && (
-        <div className="h-48 w-full mb-lg">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={stockData.chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e0e4e8" />
-              <XAxis
-                dataKey="time"
-                tickFormatter={(t: Date) =>
-                  t.toLocaleTimeString("zh-TW", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: false,
-                  })
-                }
-                stroke="#717783"
-                tick={{ fontSize: 12 }}
-              />
-              <YAxis
-                domain={["auto", "auto"]}
-                stroke="#717783"
-                tick={{ fontSize: 12 }}
-                tickFormatter={(v: number) => v.toLocaleString("zh-TW")}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "#ffffff",
-                  border: "1px solid #c1c6d4",
-                  borderRadius: "8px",
-                  fontSize: "14px",
-                  color: "#071e27",
-                }}
-                labelFormatter={(t) => {
-                  if (t instanceof Date) {
-                    return t.toLocaleTimeString("zh-TW", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      hour12: false,
-                    });
+      {chartSeries.length > 0 && maxEntry && minEntry && (
+        <div className="mb-lg rounded-xl border border-outline-variant bg-surface-container-lowest overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-sm px-md pt-md pb-sm">
+            <p className="text-[11px] text-on-surface-variant shrink-0">
+              上次更新：{formatUpdatedLabel(stockData.updatedAt)}
+            </p>
+            <div
+              className="flex items-center gap-0.5 text-on-surface-variant text-xs"
+              role="group"
+              aria-label="圖表區間（課程版僅 1D 有資料）"
+            >
+              {CHART_PERIODS.map((p) => (
+                <span
+                  key={p}
+                  className={
+                    p === "1D"
+                      ? "px-2.5 py-1 rounded-full bg-surface-container-high text-on-surface font-semibold"
+                      : "px-2 py-1 rounded-full opacity-60"
                   }
-                  return String(t);
-                }}
-                formatter={(value) => {
-                  const v = Number(value);
-                  return [
-                    `$${v.toLocaleString("zh-TW", { minimumFractionDigits: 2 })}`,
-                    "Price",
-                  ];
-                }}
-              />
-              {stockData.previousClose !== null && (
-                <ReferenceLine
-                  y={stockData.previousClose}
-                  stroke="#717783"
-                  strokeDasharray="4 4"
-                  label={{
-                    value: `Prev Close ${formatPrice(stockData.previousClose)}`,
-                    fill: "#717783",
-                    fontSize: 12,
-                    position: "insideTopRight",
+                >
+                  {p}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="h-56 w-full md:h-64 px-2 pb-md">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={chartSeries}
+                margin={{ top: 28, right: 8, left: 8, bottom: 4 }}
+              >
+                <defs>
+                  <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={lineColor} stopOpacity={0.45} />
+                    <stop offset="100%" stopColor={lineColor} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <XAxis dataKey="idx" type="number" hide domain={["dataMin", "dataMax"]} />
+                <YAxis hide domain={["auto", "auto"]} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "var(--color-surface-container-lowest)",
+                    border: "1px solid var(--color-outline-variant)",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    color: "var(--color-on-surface)",
+                  }}
+                  labelFormatter={(_, payload) => {
+                    const t = payload?.[0]?.payload?.time;
+                    if (t instanceof Date) {
+                      return t.toLocaleTimeString("zh-TW", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: false,
+                      });
+                    }
+                    return "";
+                  }}
+                  formatter={(value) => {
+                    const v = Number(value);
+                    return [
+                      `$${v.toLocaleString("zh-TW", { minimumFractionDigits: 2 })}`,
+                      "價格",
+                    ];
                   }}
                 />
-              )}
-              <Line
-                type="monotone"
-                dataKey="price"
-                stroke={lineColor}
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4, fill: lineColor }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+                <ReferenceLine
+                  y={avgPrice}
+                  stroke="var(--color-outline-variant)"
+                  strokeDasharray="4 4"
+                  label={{
+                    value: "AVG",
+                    position: "insideLeft",
+                    fill: "var(--color-on-surface-variant)",
+                    fontSize: 11,
+                  }}
+                />
+                <ReferenceLine
+                  y={maxEntry.price}
+                  stroke="var(--color-outline-variant)"
+                  strokeDasharray="4 4"
+                />
+                <Area
+                  type="monotone"
+                  dataKey="price"
+                  stroke={lineColor}
+                  strokeWidth={2}
+                  fill={`url(#${gradientId})`}
+                  dot={false}
+                  activeDot={{ r: 5, fill: lineColor, stroke: "#fff", strokeWidth: 2 }}
+                />
+                <ReferenceDot
+                  x={maxEntry.idx}
+                  y={maxEntry.price}
+                  r={4}
+                  fill={lineColor}
+                  stroke="#fff"
+                  strokeWidth={2}
+                  label={{
+                    value: formatPrice(maxEntry.price),
+                    position: "top",
+                    fill: "var(--color-on-surface-variant)",
+                    fontSize: 11,
+                  }}
+                />
+                <ReferenceDot
+                  x={minEntry.idx}
+                  y={minEntry.price}
+                  r={4}
+                  fill={lineColor}
+                  stroke="#fff"
+                  strokeWidth={2}
+                  label={{
+                    value: formatPrice(minEntry.price),
+                    position: "bottom",
+                    fill: "var(--color-on-surface-variant)",
+                    fontSize: 11,
+                  }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+          <p className="px-md pb-sm text-[11px] text-on-surface-variant">
+            當日走勢 · Recharts AreaChart · Yahoo Finance
+          </p>
         </div>
       )}
 
