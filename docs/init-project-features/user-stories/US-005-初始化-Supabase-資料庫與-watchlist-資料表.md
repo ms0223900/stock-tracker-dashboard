@@ -19,13 +19,53 @@
 - [x] 可從 Next.js client 端使用 anon key 讀寫 watchlist
 - [x] `.env.local` 已正確配置且不進版本控制
 
-**驗證說明**：
-- `supabase/migrations/001_create_watchlist.sql`：包含完整 schema（UUID PK、symbol、target_price、last_price、is_notified、notified_at、created_at、updated_at）與寬鬆 RLS policies（public anon key 可讀寫）
-- `lib/supabase/client.ts`：使用 `createBrowserClient`（anon / publishable key）
-- `lib/supabase/server.ts`：使用 `createServerClient` 搭配 cookies
-- `lib/supabase/middleware.ts`：Next.js middleware helper
-- `.env.local`：已配置 `NEXT_PUBLIC_SUPABASE_URL` 與 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`，已確認 `.gitignore` 排除 `.env*.local`
-- ⚠️ 需在 Supabase Dashboard 的 SQL Editor 中執行 migration SQL 以建立資料表
+#### 驗收說明
+
+**整體結論**：PARTIAL ⚠️
+
+> Repo 內 migration、RLS、`lib/supabase/*` client 均已就緒；US 所列環境變數名為 `NEXT_PUBLIC_SUPABASE_ANON_KEY`，程式實際讀取 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`（新版 Supabase 用語，語意對應 anon）。實際雲端是否已套用 migration、`SERVICE_ROLE_KEY` 是否填入，仍需環境側確認。
+
+---
+
+**AC-1：[watchlist 欄位與型別符合 schema]**
+
+狀態：✅ 通過
+
+- `supabase/migrations/001_create_watchlist.sql` 定義 `id` UUID PK、`symbol`、`target_price`、`last_price`、`is_notified` default false、`notified_at`、`created_at`、`updated_at`。
+
+---
+
+**AC-2：[Server 可用 service role 讀寫]**
+
+狀態：⚠️ 部分實作
+
+- `app/api/check-prices/route.ts` 的 `getSupabase()` 使用 `SUPABASE_SERVICE_ROLE_KEY` 與 `NEXT_PUBLIC_SUPABASE_URL`。
+- **差異說明**：未於靜態驗證本機／Vercel 是否確實設定該環境變數；缺失時會在執行期失敗。
+
+---
+
+**AC-3：[Client 可用 anon／publishable 讀寫]**
+
+狀態：✅ 通過
+
+- `lib/supabase/client.ts`：`createBrowserClient` + `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`（對應可公開金鑰）。
+- `hooks/useWatchlist.ts` 以該 client 對 `watchlist` 進行 CRUD。
+- Migration 之 RLS policies 允許 public read/write。
+
+---
+
+**AC-4：[.env.local 不進版控]**
+
+狀態：✅ 通過
+
+- `.gitignore` 含 `.env*.local`。
+
+---
+
+**後續建議**
+
+- 將 US／spec 環境變數名與程式 `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` 對齊文案，避免學員誤設 key 名稱。
+- US 下方「待辦」可選：`SUPABASE_SERVICE_ROLE_KEY`。
 
 **待辦**：
 
