@@ -3,8 +3,8 @@ export interface ValidationResult {
   error: string | null;
 }
 
-/** 僅英數字；不強制 `XXXX.TW` 結尾 */
-const SYMBOL_REGEX = /^[A-Za-z0-9]+$/;
+/** 英數字與 `.`；不強制 `XXXX.TW` 結尾 */
+const SYMBOL_REGEX = /^[A-Za-z0-9.]+$/;
 
 export function validateSymbol(symbol: string): ValidationResult {
   const trimmed = symbol.trim();
@@ -16,7 +16,7 @@ export function validateSymbol(symbol: string): ValidationResult {
   if (!SYMBOL_REGEX.test(trimmed)) {
     return {
       valid: false,
-      error: "股票代號僅限英數字，請勿輸入中文、空格或標點",
+      error: "股票代號僅限英數字與句點（例如 2330.TW），請勿輸入中文、空格或其他標點",
     };
   }
 
