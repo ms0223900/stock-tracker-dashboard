@@ -60,24 +60,16 @@ function firstNonNull<T>(arr: (T | null)[] | undefined): T | undefined {
 
 function maxNonNull(nums: (number | null)[] | undefined): number | undefined {
   if (!nums?.length) return undefined;
-  let m: number | undefined;
-  for (const x of nums) {
-    if (x !== null && x !== undefined) {
-      if (m === undefined || x > m) m = x;
-    }
-  }
-  return m;
+  const valid = nums.filter((x): x is number => x != null);
+  if (!valid.length) return undefined;
+  return Math.max(...valid);
 }
 
 function minNonNull(nums: (number | null)[] | undefined): number | undefined {
   if (!nums?.length) return undefined;
-  let m: number | undefined;
-  for (const x of nums) {
-    if (x !== null && x !== undefined) {
-      if (m === undefined || x < m) m = x;
-    }
-  }
-  return m;
+  const valid = nums.filter((x): x is number => x != null);
+  if (!valid.length) return undefined;
+  return Math.min(...valid);
 }
 
 /** 當日 1 分 K：各棒成交量加總為全日量（勿取最後一根）。 */
