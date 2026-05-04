@@ -1,7 +1,13 @@
 "use client";
 
 import { POLL_INTERVAL_MS } from "@/lib/constants";
-import { fetchStockPrice, type ChartPoint, type StockPrice } from "@/lib/yahoo-finance";
+import { createClient } from "@/lib/supabase/client";
+import {
+  fetchStockPrice,
+  isAmbiguousPrevCloseSnapshot,
+  type ChartPoint,
+  type StockPrice,
+} from "@/lib/yahoo-finance";
 import type { WatchlistItem } from "@/types/watchlist";
 import type { Dispatch, SetStateAction } from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -22,6 +28,7 @@ export function useWatchlistPolling({
   setWatchlist,
 }: UseWatchlistPollingParams) {
   const [chartDataMap, setChartDataMap] = useState<Record<string, ChartPoint[]>>({});
+  const supabase = createClient();
 
   const stockDataRef = useRef(stockData);
   const watchlistRef = useRef(watchlist);
@@ -52,6 +59,7 @@ export function useWatchlistPolling({
           id: item.id,
           price: d.currentPrice,
           previousClose: d.previousClose,
+          hasRegularMarketPriceFromMeta: d.hasRegularMarketPriceFromMeta,
           chartData: d.chartData,
         })),
       ),
@@ -63,10 +71,30 @@ export function useWatchlistPolling({
           (r) => r.status === "fulfilled" && r.value.id === item.id,
         );
         if (result?.status === "fulfilled") {
+          const v = result.value;
+          let nextLast = v.price;
+          if (
+            isAmbiguousPrevCloseSnapshot({
+              hasRegularMarketPriceFromMeta: v.hasRegularMarketPriceFromMeta,
+              currentPrice: v.price,
+              previousClose: v.previousClose,
+            }) &&
+            item.last_price != null &&
+            Math.abs(item.last_price - v.price) >= 0.01
+          ) {
+            nextLast = item.last_price;
+          }
+          void supabase
+            .from("watchlist")
+            .update({
+              last_price: nextLast,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", item.id);
           return {
             ...item,
-            last_price: result.value.price,
-            previousClose: result.value.previousClose,
+            last_price: nextLast,
+            previousClose: v.previousClose,
           };
         }
         return item;

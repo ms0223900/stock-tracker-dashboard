@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { fetchStockPriceServer } from "@/lib/yahoo-finance";
+import { fetchStockPriceServer, isAmbiguousPrevCloseSnapshot } from "@/lib/yahoo-finance";
 import { sendTelegramMessage } from "@/lib/telegram";
 
 interface WatchlistRow {
@@ -45,18 +45,22 @@ export async function GET() {
     for (const item of rows) {
       try {
         const price = await fetchStockPriceServer(item.symbol);
+        const ambiguous = isAmbiguousPrevCloseSnapshot(price);
 
-        // Update last_price in DB
-        await supabase
-          .from("watchlist")
-          .update({ last_price: price.currentPrice, updated_at: new Date().toISOString() })
-          .eq("id", item.id);
+        if (!ambiguous) {
+          await supabase
+            .from("watchlist")
+            .update({ last_price: price.currentPrice, updated_at: new Date().toISOString() })
+            .eq("id", item.id);
+        }
+
+        const triggerPrice = ambiguous ? (item.last_price ?? price.currentPrice) : price.currentPrice;
 
         // Check trigger: price >= target and not already notified
-        if (price.currentPrice >= item.target_price && !item.is_notified) {
+        if (triggerPrice >= item.target_price && !item.is_notified) {
           const sent = await sendTelegramMessage(
             item.symbol,
-            price.currentPrice,
+            triggerPrice,
             item.target_price,
           );
 
@@ -70,15 +74,15 @@ export async function GET() {
               })
               .eq("id", item.id);
 
-            results.push(`${item.symbol}: notified ($${price.currentPrice} >= $${item.target_price})`);
+            results.push(`${item.symbol}: notified ($${triggerPrice} >= $${item.target_price})`);
           } else {
             results.push(`${item.symbol}: trigger met but Telegram send failed, is_notified kept false`);
           }
-        } else if (price.currentPrice >= item.target_price && item.is_notified) {
+        } else if (triggerPrice >= item.target_price && item.is_notified) {
           results.push(`${item.symbol}: already notified, skipped`);
         } else {
           results.push(
-            `${item.symbol}: $${price.currentPrice} < $${item.target_price}, no notification`,
+            `${item.symbol}: $${triggerPrice} < $${item.target_price}, no notification`,
           );
         }
       } catch (err) {

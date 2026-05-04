@@ -83,7 +83,7 @@ export default function WatchlistCard({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {watchlist.map((item) => {
             const isUp =
-              item.previousClose !== null &&
+              item.previousClose != null &&
               item.last_price !== null &&
               item.last_price >= item.previousClose;
 

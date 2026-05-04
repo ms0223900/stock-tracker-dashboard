@@ -6,6 +6,8 @@ export interface ChartPoint {
 export interface StockPrice {
   symbol: string;
   currentPrice: number;
+  /** Yahoo chart `meta.regularMarketPrice` 有值時為 true；若為 false，代表 currentPrice 來自 quote.close 後備，可能等於昨收 */
+  hasRegularMarketPriceFromMeta: boolean;
   previousClose: number | null;
   change: number | null;
   changePercent: number | null;
@@ -47,6 +49,25 @@ function lastNonNull<T>(arr: (T | null)[]): T | undefined {
   return undefined;
 }
 
+const PRICE_EQ_EPS = 0.01;
+
+function approxEqualPrices(a: number, b: number): boolean {
+  return Math.abs(a - b) < PRICE_EQ_EPS;
+}
+
+/** Yahoo 未給 regularMarketPrice、後備價又貼近昨收時，視為不可靠快照（勿覆寫較可信的 last_price）。 */
+export function isAmbiguousPrevCloseSnapshot(p: {
+  hasRegularMarketPriceFromMeta: boolean;
+  currentPrice: number;
+  previousClose: number | null;
+}): boolean {
+  return (
+    !p.hasRegularMarketPriceFromMeta &&
+    p.previousClose != null &&
+    approxEqualPrices(p.currentPrice, p.previousClose)
+  );
+}
+
 export async function fetchStockPrice(symbol: string): Promise<StockPrice> {
   return fetchStockPriceRaw(symbol, `/api/yahoo-finance?symbol=${encodeURIComponent(symbol)}`);
 }
@@ -61,7 +82,7 @@ async function fetchStockPriceRaw(symbol: string, url: string): Promise<StockPri
 
   let response: Response;
   try {
-    response = await fetch(url);
+    response = await fetch(url, { cache: "no-store" });
   } catch {
     throw new Error("無法連線到伺服器，請檢查網路連線");
   }
@@ -84,7 +105,10 @@ async function fetchStockPriceRaw(symbol: string, url: string): Promise<StockPri
   }
 
   const quote = result.indicators.quote[0];
-  const currentPrice = result.meta.regularMarketPrice ?? lastNonNull(quote.close);
+  const metaRegularMarketPrice = result.meta.regularMarketPrice;
+  const hasRegularMarketPriceFromMeta = metaRegularMarketPrice != null;
+  const fallbackClose = lastNonNull(quote.close);
+  const currentPrice = metaRegularMarketPrice ?? fallbackClose;
   const previousClose = result.meta.previousClose ?? null;
   let change: number | null = null;
   let changePercent: number | null = null;
@@ -121,6 +145,7 @@ async function fetchStockPriceRaw(symbol: string, url: string): Promise<StockPri
   return {
     symbol,
     currentPrice,
+    hasRegularMarketPriceFromMeta,
     previousClose,
     change,
     changePercent,

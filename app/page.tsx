@@ -57,16 +57,10 @@ export default function HomePage() {
 
         <QueryAndTrackCard
           symbol={symbol}
-          targetPrice={targetPrice}
           queryLoading={queryLoading}
-          saving={saving}
-          hasStockResult={!!stockData}
           symbolError={symbolError}
-          targetPriceError={targetPriceError}
           onSymbolChange={onSymbolChange}
-          onTargetPriceChange={onTargetPriceChange}
           onQuery={handleQuery}
-          onSave={() => handleSave(stockData)}
           onSymbolKeyDown={handleSymbolKeyDown}
         />
 
@@ -74,6 +68,11 @@ export default function HomePage() {
           stockData={stockData}
           queryError={queryError}
           queryLoading={queryLoading}
+          targetPrice={targetPrice}
+          targetPriceError={targetPriceError}
+          saving={saving}
+          onTargetPriceChange={onTargetPriceChange}
+          onSave={() => handleSave(stockData)}
         />
 
         <WatchlistCard

@@ -6,6 +6,36 @@ import type { StockPrice } from "@/lib/yahoo-finance";
 import type { WatchlistItem } from "@/types/watchlist";
 import { useCallback, useState } from "react";
 
+const PRICE_NEAR_EPS = 0.01;
+
+function pricesNearlyEqual(a: number, b: number): boolean {
+  return Math.abs(a - b) < PRICE_NEAR_EPS;
+}
+
+/** 輪詢只更新記憶體時，DB `last_price` 可能仍為昨收；refetch 時保留較可信的即時價。 */
+function mergeWatchlistFromDb(prev: WatchlistItem[], fromDb: WatchlistItem[]): WatchlistItem[] {
+  if (prev.length === 0) return fromDb;
+
+  return fromDb.map((row) => {
+    const old = prev.find((p) => p.id === row.id);
+    if (
+      old &&
+      old.previousClose != null &&
+      row.last_price != null &&
+      old.last_price != null &&
+      pricesNearlyEqual(row.last_price, old.previousClose) &&
+      !pricesNearlyEqual(old.last_price, row.last_price)
+    ) {
+      return {
+        ...row,
+        last_price: old.last_price,
+        previousClose: old.previousClose,
+      };
+    }
+    return row;
+  });
+}
+
 export function useWatchlist() {
   const [targetPrice, setTargetPrice] = useState("");
   const [targetPriceError, setTargetPriceError] = useState<string | null>(null);
@@ -32,10 +62,17 @@ export function useWatchlist() {
     }
 
     if (data) {
-      const items = data as WatchlistItem[];
-      setWatchlist(items);
+      const items = (data as WatchlistItem[]).map((row) => ({
+        ...row,
+        previousClose: row.previousClose ?? null,
+      }));
+      let merged: WatchlistItem[] = items;
+      setWatchlist((prev) => {
+        merged = mergeWatchlistFromDb(prev, items);
+        return merged;
+      });
       setWatchlistLoading(false);
-      return items;
+      return merged;
     }
 
     setWatchlistLoading(false);

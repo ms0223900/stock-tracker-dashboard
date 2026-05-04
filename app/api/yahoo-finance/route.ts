@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const symbol = searchParams.get("symbol");
@@ -15,6 +17,7 @@ export async function GET(request: Request) {
 
   try {
     const response = await fetch(url, {
+      cache: "no-store",
       headers: { "User-Agent": "Mozilla/5.0" },
     });
 
@@ -26,7 +29,9 @@ export async function GET(request: Request) {
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+    return NextResponse.json(data, {
+      headers: { "Cache-Control": "private, no-store, max-age=0" },
+    });
   } catch {
     return NextResponse.json(
       { error: "Failed to connect to Yahoo Finance" },
