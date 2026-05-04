@@ -26,7 +26,7 @@ export default function QueryAndTrackCard({
       </div>
 
       <p className="mt-4 text-sm text-on-surface-variant leading-relaxed">
-        格式須為 ○○○○.TW；目標價須大於 0。達標後會發送 Telegram 通知。
+        支援多國股市代號，若為台股代號則須為 ○○○○.TW；目標價須大於 0。達標後會發送 Telegram 通知。
       </p>
 
       <div className="mt-5 flex flex-col gap-4 sm:flex-row sm:items-end">
