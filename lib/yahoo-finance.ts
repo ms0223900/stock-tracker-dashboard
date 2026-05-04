@@ -49,10 +49,23 @@ function lastNonNull<T>(arr: (T | null)[]): T | undefined {
   return undefined;
 }
 
-const PRICE_EQ_EPS = 0.01;
+export const PRICE_EQ_EPS = 0.01;
 
-function approxEqualPrices(a: number, b: number): boolean {
+export function approxEqualPrices(a: number, b: number): boolean {
   return Math.abs(a - b) < PRICE_EQ_EPS;
+}
+
+/** 相對昨收漲跌（台股紅漲綠跌）；無昨收或現價時視為 neutral。 */
+export type TwseMovement = "up" | "down" | "neutral";
+
+export function getTwseMovement(
+  last: number | null,
+  previousClose: number | null,
+): TwseMovement {
+  if (last === null || previousClose === null) return "neutral";
+  if (approxEqualPrices(last, previousClose)) return "neutral";
+  if (last > previousClose) return "up";
+  return "down";
 }
 
 /** Yahoo 未給 regularMarketPrice、後備價又貼近昨收時，視為不可靠快照（勿覆寫較可信的 last_price）。 */

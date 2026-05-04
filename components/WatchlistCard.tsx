@@ -1,7 +1,7 @@
 "use client";
 
 import { formatPrice } from "@/lib/format";
-import type { ChartPoint } from "@/lib/yahoo-finance";
+import { getTwseMovement, type ChartPoint } from "@/lib/yahoo-finance";
 import type { WatchlistItem } from "@/types/watchlist";
 import StockSparkline from "./StockSparkline";
 
@@ -82,18 +82,21 @@ export default function WatchlistCard({
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {watchlist.map((item) => {
-            const isUp =
-              item.previousClose != null &&
-              item.last_price !== null &&
-              item.last_price >= item.previousClose;
-
+            const movement = getTwseMovement(item.last_price, item.previousClose);
             const sparkData = chartDataMap[item.id] || [];
             const trend =
-              sparkData.length >= 2
-                ? sparkData[sparkData.length - 1].price >= sparkData[0].price
-                  ? "up"
-                  : "down"
-                : "neutral";
+              movement === "up" ? "up" : movement === "down" ? "down" : "neutral";
+
+            const latestPriceClass =
+              item.last_price !== null
+                ? item.previousClose !== null
+                  ? movement === "up"
+                    ? "text-twse-up"
+                    : movement === "down"
+                      ? "text-twse-down"
+                      : "text-twse-neutral"
+                  : "text-primary"
+                : "text-primary";
 
             const notifiedLabel = formatNotifiedAt(item.notified_at);
 
@@ -123,14 +126,7 @@ export default function WatchlistCard({
                 <div className="flex justify-between items-end gap-4">
                   <div>
                     <p className="text-xs text-on-surface-variant mb-0.5">最新價</p>
-                    <p
-                      className={`text-[22px] font-bold tabular-nums ${item.last_price !== null
-                        ? isUp
-                          ? "text-twse-up"
-                          : "text-twse-down"
-                        : "text-primary"
-                        }`}
-                    >
+                    <p className={`text-[22px] font-bold tabular-nums ${latestPriceClass}`}>
                       {formatPrice(item.last_price)}
                     </p>
                   </div>

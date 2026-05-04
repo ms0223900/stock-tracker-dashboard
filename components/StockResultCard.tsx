@@ -4,7 +4,7 @@ import { useMemo } from "react";
 
 import { TWSE_DOWN, TWSE_NEUTRAL, TWSE_UP } from "@/lib/constants";
 import { formatPrice, formatVolumeCompact } from "@/lib/format";
-import type { StockPrice } from "@/lib/yahoo-finance";
+import { getTwseMovement, type StockPrice } from "@/lib/yahoo-finance";
 import {
   Area,
   AreaChart,
@@ -125,10 +125,29 @@ export default function StockResultCard({
     );
   }
 
-  const isUp =
-    stockData.previousClose !== null &&
-    stockData.currentPrice >= stockData.previousClose;
-  const lineColor = isUp ? TWSE_UP : stockData.previousClose !== null ? TWSE_DOWN : TWSE_NEUTRAL;
+  const movement = getTwseMovement(stockData.currentPrice, stockData.previousClose);
+  const lineColor =
+    movement === "up" ? TWSE_UP : movement === "down" ? TWSE_DOWN : TWSE_NEUTRAL;
+  const headlinePriceClass =
+    stockData.previousClose !== null
+      ? movement === "up"
+        ? "text-twse-up"
+        : movement === "down"
+          ? "text-twse-down"
+          : "text-twse-neutral"
+      : "text-primary";
+  const changeRowClass =
+    movement === "up"
+      ? "text-twse-up"
+      : movement === "down"
+        ? "text-twse-down"
+        : "text-twse-neutral";
+  const changeIcon =
+    movement === "up"
+      ? "trending_up"
+      : movement === "down"
+        ? "trending_down"
+        : "trending_flat";
 
   const saveDisabled = saving;
 
@@ -145,16 +164,18 @@ export default function StockResultCard({
         </div>
         <div className="flex w-full flex-col gap-3.5 sm:w-auto sm:max-w-[min(100%,420px)] sm:items-end">
           <div className="text-left sm:text-right shrink-0">
-            <p className="text-3xl sm:text-[36px] font-bold text-primary tabular-nums leading-none">
+            <p
+              className={`text-3xl sm:text-[36px] font-bold tabular-nums leading-none ${headlinePriceClass}`}
+            >
               {formatPrice(stockData.currentPrice)}
             </p>
             <p className="mt-1 text-[13px] text-on-surface-variant">TWD</p>
             {stockData.change !== null && stockData.changePercent !== null && (
               <div
-                className={`mt-2 flex flex-wrap items-center gap-1 sm:justify-end text-sm font-medium tabular-nums ${isUp ? "text-twse-up" : "text-twse-down"}`}
+                className={`mt-2 flex flex-wrap items-center gap-1 sm:justify-end text-sm font-medium tabular-nums ${changeRowClass}`}
               >
                 <span className="material-symbols-outlined text-base" aria-hidden>
-                  {isUp ? "trending_up" : "trending_down"}
+                  {changeIcon}
                 </span>
                 <span>
                   {stockData.change > 0 ? "+" : ""}
