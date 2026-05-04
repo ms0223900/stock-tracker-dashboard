@@ -193,7 +193,7 @@
               "name": "content",
               "width": 1280,
               "layout": "vertical",
-              "gap": 24,
+              "gap": 16,
               "padding": [
                 0,
                 0,
@@ -302,7 +302,7 @@
                           "type": "frame",
                           "id": "CcAiy",
                           "name": "symCol",
-                          "width": 109,
+                          "width": "fill_container",
                           "layout": "vertical",
                           "gap": 8,
                           "children": [
@@ -340,56 +340,6 @@
                                   "name": "symPlaceholder",
                                   "fill": "$--foreground",
                                   "content": "2330.TW",
-                                  "fontFamily": "$--font-secondary",
-                                  "fontSize": 15,
-                                  "fontWeight": "500"
-                                }
-                              ]
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "aufwo",
-                          "name": "tgtCol",
-                          "width": 260,
-                          "layout": "vertical",
-                          "gap": 8,
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "b1ORw",
-                              "name": "tgtLabel",
-                              "fill": "$--foreground",
-                              "content": "目標股價",
-                              "fontFamily": "$--font-secondary",
-                              "fontSize": 13,
-                              "fontWeight": "600"
-                            },
-                            {
-                              "type": "frame",
-                              "id": "p2LuY8",
-                              "name": "tgtInput",
-                              "height": 48,
-                              "fill": "$--card-muted",
-                              "cornerRadius": 14,
-                              "stroke": {
-                                "align": "inside",
-                                "thickness": 1,
-                                "fill": "$--border"
-                              },
-                              "padding": [
-                                0,
-                                18
-                              ],
-                              "alignItems": "center",
-                              "children": [
-                                {
-                                  "type": "text",
-                                  "id": "ZaMnk",
-                                  "name": "tgtPlaceholder",
-                                  "fill": "$--foreground",
-                                  "content": "2200",
                                   "fontFamily": "$--font-secondary",
                                   "fontSize": 15,
                                   "fontWeight": "500"
@@ -436,46 +386,6 @@
                               "name": "queryLabel",
                               "fill": "$--primary-foreground",
                               "content": "查詢股價",
-                              "fontFamily": "$--font-secondary",
-                              "fontSize": 15,
-                              "fontWeight": "600"
-                            }
-                          ]
-                        },
-                        {
-                          "type": "frame",
-                          "id": "AEYLp",
-                          "name": "saveBtn",
-                          "fill": "$--secondary",
-                          "cornerRadius": 999,
-                          "stroke": {
-                            "align": "inside",
-                            "thickness": 1,
-                            "fill": "$--border"
-                          },
-                          "gap": 8,
-                          "padding": [
-                            14,
-                            22
-                          ],
-                          "alignItems": "center",
-                          "children": [
-                            {
-                              "type": "icon_font",
-                              "id": "PmCir",
-                              "name": "saveIcon",
-                              "width": 18,
-                              "height": 18,
-                              "iconFontName": "bell-ring",
-                              "iconFontFamily": "lucide",
-                              "fill": "$--primary"
-                            },
-                            {
-                              "type": "text",
-                              "id": "idzTr",
-                              "name": "saveLabel",
-                              "fill": "$--foreground",
-                              "content": "儲存追蹤",
                               "fontFamily": "$--font-secondary",
                               "fontSize": 15,
                               "fontWeight": "600"
@@ -540,31 +450,145 @@
                         },
                         {
                           "type": "frame",
-                          "id": "LGNGs",
-                          "name": "priceBlock",
+                          "id": "priceActionCol",
+                          "name": "priceActionCol",
                           "layout": "vertical",
-                          "gap": 2,
+                          "gap": 14,
                           "alignItems": "end",
                           "children": [
                             {
-                              "type": "text",
-                              "id": "tjxL5",
-                              "name": "priceMain",
-                              "fill": "$--primary",
-                              "content": "1,205.00",
-                              "fontFamily": "$--font-primary",
-                              "fontSize": 36,
-                              "fontWeight": "700"
+                              "type": "frame",
+                              "id": "LGNGs",
+                              "name": "priceBlock",
+                              "layout": "vertical",
+                              "gap": 2,
+                              "alignItems": "end",
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "tjxL5",
+                                  "name": "priceMain",
+                                  "fill": "$--primary",
+                                  "content": "1,205.00",
+                                  "fontFamily": "$--font-primary",
+                                  "fontSize": 36,
+                                  "fontWeight": "700"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "T6BM8J",
+                                  "name": "priceUnit",
+                                  "fill": "$--muted-foreground",
+                                  "content": "TWD",
+                                  "fontFamily": "$--font-secondary",
+                                  "fontSize": 13,
+                                  "fontWeight": "normal"
+                                }
+                              ]
                             },
                             {
-                              "type": "text",
-                              "id": "T6BM8J",
-                              "name": "priceUnit",
-                              "fill": "$--muted-foreground",
-                              "content": "TWD",
-                              "fontFamily": "$--font-secondary",
-                              "fontSize": 13,
-                              "fontWeight": "normal"
+                              "type": "frame",
+                              "id": "tgtSaveRow",
+                              "name": "tgtSaveRow",
+                              "gap": 12,
+                              "alignItems": "end",
+                              "children": [
+                                {
+                                  "type": "frame",
+                                  "id": "aufwo",
+                                  "name": "tgtCol",
+                                  "width": "fit_content(74)",
+                                  "height": "fit_content(75)",
+                                  "layout": "none",
+                                  "children": [
+                                    {
+                                      "type": "text",
+                                      "id": "b1ORw",
+                                      "x": 0,
+                                      "y": 0,
+                                      "name": "tgtLabel",
+                                      "fill": "$--foreground",
+                                      "content": "目標股價",
+                                      "fontFamily": "$--font-secondary",
+                                      "fontSize": 13,
+                                      "fontWeight": "600"
+                                    },
+                                    {
+                                      "type": "frame",
+                                      "id": "p2LuY8",
+                                      "x": 0,
+                                      "y": 27,
+                                      "name": "tgtInput",
+                                      "height": 48,
+                                      "fill": "$--card-muted",
+                                      "cornerRadius": 14,
+                                      "stroke": {
+                                        "align": "inside",
+                                        "thickness": 1,
+                                        "fill": "$--border"
+                                      },
+                                      "padding": [
+                                        0,
+                                        18
+                                      ],
+                                      "alignItems": "center",
+                                      "children": [
+                                        {
+                                          "type": "text",
+                                          "id": "ZaMnk",
+                                          "name": "tgtPlaceholder",
+                                          "fill": "$--foreground",
+                                          "content": "2200",
+                                          "fontFamily": "$--font-secondary",
+                                          "fontSize": 15,
+                                          "fontWeight": "500"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "type": "frame",
+                                  "id": "AEYLp",
+                                  "name": "saveBtn",
+                                  "width": "fit_content(161)",
+                                  "height": "fit_content(50)",
+                                  "fill": "$--secondary",
+                                  "cornerRadius": 999,
+                                  "stroke": {
+                                    "align": "inside",
+                                    "thickness": 1,
+                                    "fill": "$--border"
+                                  },
+                                  "layout": "none",
+                                  "children": [
+                                    {
+                                      "type": "icon_font",
+                                      "id": "PmCir",
+                                      "x": 22,
+                                      "y": 16,
+                                      "name": "saveIcon",
+                                      "width": 18,
+                                      "height": 18,
+                                      "iconFontName": "bell-ring",
+                                      "iconFontFamily": "lucide",
+                                      "fill": "$--primary"
+                                    },
+                                    {
+                                      "type": "text",
+                                      "id": "idzTr",
+                                      "x": 48,
+                                      "y": 14,
+                                      "name": "saveLabel",
+                                      "fill": "$--foreground",
+                                      "content": "儲存目標股價",
+                                      "fontFamily": "$--font-secondary",
+                                      "fontSize": 15,
+                                      "fontWeight": "600"
+                                    }
+                                  ]
+                                }
+                              ]
                             }
                           ]
                         }
