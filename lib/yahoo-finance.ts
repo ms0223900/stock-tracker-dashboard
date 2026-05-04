@@ -49,6 +49,47 @@ function lastNonNull<T>(arr: (T | null)[]): T | undefined {
   return undefined;
 }
 
+/** 分鐘線序列：第一個非 null（開盤／當日第一根有效報價）。 */
+function firstNonNull<T>(arr: (T | null)[] | undefined): T | undefined {
+  if (!arr?.length) return undefined;
+  for (let i = 0; i < arr.length; i++) {
+    if (arr[i] !== null && arr[i] !== undefined) return arr[i] as T;
+  }
+  return undefined;
+}
+
+function maxNonNull(nums: (number | null)[] | undefined): number | undefined {
+  if (!nums?.length) return undefined;
+  let m: number | undefined;
+  for (const x of nums) {
+    if (x !== null && x !== undefined) {
+      if (m === undefined || x > m) m = x;
+    }
+  }
+  return m;
+}
+
+function minNonNull(nums: (number | null)[] | undefined): number | undefined {
+  if (!nums?.length) return undefined;
+  let m: number | undefined;
+  for (const x of nums) {
+    if (x !== null && x !== undefined) {
+      if (m === undefined || x < m) m = x;
+    }
+  }
+  return m;
+}
+
+/** 當日 1 分 K：各棒成交量加總為全日量（勿取最後一根）。 */
+function sumNonNull(nums: (number | null)[] | undefined): number {
+  if (!nums?.length) return 0;
+  let s = 0;
+  for (const x of nums) {
+    if (x !== null && x !== undefined) s += x;
+  }
+  return s;
+}
+
 export const PRICE_EQ_EPS = 0.01;
 
 export function approxEqualPrices(a: number, b: number): boolean {
@@ -129,10 +170,13 @@ async function fetchStockPriceRaw(symbol: string, url: string): Promise<StockPri
     change = currentPrice - previousClose;
     changePercent = previousClose !== 0 ? (change / previousClose) * 100 : null;
   }
-  const high = lastNonNull(quote.high) ?? 0;
-  const low = lastNonNull(quote.low) ?? 0;
-  const open = lastNonNull(quote.open) ?? 0;
-  const volume = lastNonNull(quote.volume) ?? 0;
+  const high =
+    maxNonNull(quote.high) ?? maxNonNull(quote.close) ?? lastNonNull(quote.high) ?? 0;
+  const low =
+    minNonNull(quote.low) ?? minNonNull(quote.close) ?? lastNonNull(quote.low) ?? 0;
+  const open =
+    firstNonNull(quote.open) ?? firstNonNull(quote.close) ?? lastNonNull(quote.open) ?? 0;
+  const volume = sumNonNull(quote.volume);
   const updatedAt = result.meta.regularMarketTime
     ? new Date(result.meta.regularMarketTime * 1000)
     : new Date();
