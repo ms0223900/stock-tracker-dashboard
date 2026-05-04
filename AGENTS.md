@@ -1,72 +1,101 @@
 # AGENTS.md
 
-**CURRENT MODE：`PROTOTYPE`（快速做完）**  
-  
-本檔由 `npm run ai:prototype` 覆寫生效；細則見 [`.cursor/rules/`](.cursor/rules/)（與 [`rules-switch/modes/prototype/rules/`](rules-switch/modes/prototype/rules/) 同源）與 [`docs/spec.md`](docs/spec.md)。切換至維護模式：`npm run ai:production`。
+**CURRENT MODE：`PRODUCTION`（長期維護）**  
 
-## Mode Goal｜本模式目標
+本檔由 `npm run ai:production` 覆寫生效；細則見 [`.cursor/rules/`](.cursor/rules/)（與 [`rules-switch/modes/production/rules/`](rules-switch/modes/production/rules/) 同源）。切換回快速：`npm run ai:prototype`。
 
-- **優先**：在 spec 允許範圍內 **盡快可驗收、可部署**。
-- **取捨**：可接受較扁平、較少抽象、較少的檔案切分與較輕的文件；**不低於下列「絕對底線」**。
-
-## Absolute Baselines｜絕對底線（Prototype 也不可違反）
-
-這些項目與 spec／資安一致；**不可用「求快」略過**：
-
-- **規格**：產品行為仍以 [`docs/spec.md`](docs/spec.md) 為準。
-- **機密**：`SUPABASE_SERVICE_ROLE_KEY`、`TELEGRAM_BOT_TOKEN`、`TELEGRAM_CHAT_ID` 僅能在 **Server**／Route Handler／Server Action 使用；**禁止**進入 client 或 `NEXT_PUBLIC_*`。
-- **輸入驗證**：股票代號、目標價須在邊界驗證；**無效資料不寫入 Supabase**（錯誤文案見 spec）。
-- **通知一致性**：**僅在 Telegram 發送成功後**，才將 `is_notified` 設為 `true` 並寫入 `notified_at`。
-- **錯誤體驗**：股價 API 等失敗時，UI 須有可讀繁中提示（例如「目前無法取得股價資料，請稍後再試」）；避免整頁 uncaught crash。
+本檔為「高階、穩定、跨任務」的 Agent context；**行為／驗收**以 [`docs/spec.md`](docs/spec.md) 為單一事實來源，`AGENTS.md` 不重複整份 spec。
 
 ## Role｜角色定位
 
-- 你是協助本專案的工程助手，以 **Next.js App Router + TypeScript** 完成課程 MVP。
-- 與使用者溝通：**繁體中文為主**，技術名詞可英文。
-- **不主動**擴充登入、多使用者、投顧建議、LINE、付費等 MVP 外範圍。
+- 你是協助本專案的工程助手，以 **Next.js App Router + TypeScript** 交付 **可維護、可測試、可部署** 的程式。
+- 優先：**可讀、可驗收、型別清楚、錯誤可追蹤**；變更小步驟、可 review。
+- 與使用者溝通：**繁體中文為主**，技術名詞可保留英文。
+- **不主動**擴充登入、多使用者隔離、投資建議、LINE、付費等 MVP 外範圍。
 
-## Project Context｜專案背景（精簡）
+## Project Context｜專案背景
 
-- **股價投資看板**：完整台股代號（例如 `2330.TW`）+ 目標價 → Yahoo 報價 → Supabase `watchlist` → 達標 Telegram。
-- **技術棧**：Next.js App Router、TypeScript、Tailwind、Recharts、Supabase、Telegram Bot、Vercel。
+- **名稱**：股價投資看板（Stock Watch MVP）。
+- **目的**：使用者輸入完整台股代號（例如 `2330.TW`）與目標價 → 查即時股價 → Supabase `watchlist` → 達標時 **Telegram** 提醒。
+- **技術棧**：Next.js App Router、TypeScript、Tailwind CSS、Recharts、Supabase、Yahoo Finance chart API、Telegram Bot API、Vercel。
 
-## Architecture｜架構（Prototype 態度）
+## Architecture｜架構說明
 
-- `app/` 為 UI 與路由；機密／寫 DB／發 Telegram：**server 端**處理。
-- **可先**將邏輯放在較少的檔案或 route 內；若重複第三次再抽 helper。**不要**為漂亮架構擋住 spec 交付。
+- **前端與路由**：`app/`（App Router），主要頁面 [`app/page.tsx`](app/page.tsx)、根版面 [`app/layout.tsx`](app/layout.tsx)。
+- **樣式**：[`app/globals.css`](app/globals.css) + Tailwind。
+- **機密與後端**：凡需要 **service role**、**Telegram token**、chat id 的流程，只能在 **Route Handlers**（`app/api/**/route.ts`）或 **Server Actions**；**不可**經由 `NEXT_PUBLIC_*` 或純 client 外洩。
+- **股價**：集中於 typed、可單獨測試的 Yahoo helper。
+- **資料**：Supabase `watchlist`（見 spec §7–9）。
+- **規則分層**：[`code-style.mdc`](.cursor/rules/code-style.mdc)、[`nextjs.mdc`](.cursor/rules/nextjs.mdc)、[`supabase.mdc`](.cursor/rules/supabase.mdc)、[`telegram.mdc`](.cursor/rules/telegram.mdc)。
 
 ## MVP Scope｜範圍
 
-- 對照 [`docs/spec.md`](docs/spec.md) §4；刻意不做項目同 spec §4「先不做」。
+- **必做／可選／先不做**：對照 [`docs/spec.md`](docs/spec.md) §4。
 
-## Engineering Principles｜程式風格（本模式弱化）
+## Engineering Principles｜程式設計原則（本模式強化）
 
-- **速度 > 過度設計**。`any`：**盡量少用**；若省時可短暫使用並加 **TODO** 說明收斂方式。
-- **測試**：不強制；能跑、`npm run build`／`npm run lint`／`npm run typecheck` 盡可能保持綠。
-- **Clean Architecture / SOLID**：**不要求**一步到位；新建檔時仍避免把机密与 UI 混在一起。
+細節以各 `.cursor/rules/*.mdc` 為準；此處為高階錨點：
 
-## Workflow｜建議流程
+### Clean Code
 
-1. 讀相關 spec 段落。  
-2. 小步交付、對照驗收。  
-3. 技術債用 **TODO** 或 [`docs/spec.md`](docs/spec.md) §12 註記。  
-4. 上線／課程展示前：**`npm run ai:production`** 收斂品質。
+- **命名即文件**、**短小函式**、**DRY**，但遵循 **YAGNI**——不為假想未來過度抽象。
+- **顯式錯誤路徑**：避免 `catch {}`、避免靜默 `null`。
 
-## Commands｜指令
+### SOLID（本專案語境）
+
+| 原則 | 意義 |
+| --- | --- |
+| **S** | 查價／DB／Telegram **分離** |
+| **O** | 新通知管道以 **新增模組**為主 |
+| **L/I/D** | 依賴介面或小表面 API，不依賴具體實作細節堆疊 |
+
+### Clean Architecture（輕量）
+
+```
+app/api/           ← Delivery
+lib/               ← Application + Infrastructure 分區；domain types 不依賴 framework
+```
+
+- **依賴方向**：Delivery → Application → Infrastructure；Infrastructure **禁止** import Route Handler。
+- **`StockQuote`、`WatchlistRow`、`NotificationResult` 等** 放在無框架耦合的 module（例如 `lib/types.ts`）。
+
+### Production 追加要求
+
+- **TypeScript**：**禁止無理由 `any`**；必要時 narrow + 註解 + 限期收斂。
+- **測試**：核心純函数（validation、normalize quote、門檻比對）應有可跑測試；改行為時同步更新／新增測試（若尚未建測試框架，先以小步引入並註記於 spec）。
+- **文件**：變更行為／驗收 → 同步 [`docs/spec.md`](docs/spec.md)；公開 API／cron 須可追溯說明。
+
+## Workflow｜建議工作流
+
+1. 讀 spec 相關段落。  
+2. 驗證在邊界；外部 I/O 有 typed／明確錯誤分支。  
+3. 小 PR、對照 §11 驗收意象。  
+4. 不交 token／service role 入庫。
+
+## Commands｜常用指令
 
 | 指令 | 用途 |
 | --- | --- |
 | `npm run dev` | 本機開發 |
 | `npm run build` | 建置 |
 | `npm run lint` | ESLint |
-| `npm run typecheck` | TS 檢查 |
-| `npm run ai:prototype` | 切換 AI 規則為 Prototype |
-| `npm run ai:production` | 切換 AI 規則為 Production |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm run ai:prototype` | AI 規則切換 Prototype |
+| `npm run ai:production` | AI 規則切換 Production |
 
 ## Environment & Secrets
 
-見 [`docs/spec.md`](docs/spec.md) §10；值不入庫。
+見 [`docs/spec.md`](docs/spec.md) §10。
 
-## Current State｜現況
+## Do / Don't
 
-- 詳見 [`docs/spec.md`](docs/spec.md) 與 repo 現況；切換規則說明見 [`rules-switch/chat-gpt/ai-rule-switch-guideline.md`](rules-switch/chat-gpt/ai-rule-switch-guideline.md)。
+| Do | Don't |
+| --- | --- |
+| 遵循 spec 驗證與繁中錯誤 | 自動補 `.TW`、略過輸入驗證寫 DB |
+| Server 保管機密 | client 暴露 service role／Telegram |
+| Telegram **成功後**更新 `is_notified` | 發送成功前提早標記 |
+| 明確型別與模組邊界 | 大圈 `any`、跨層級耦合 |
+
+## Current State｜目前狀態
+
+- 以 repo 與 [`docs/spec.md`](docs/spec.md) §12 為準；規則切換見 [`scripts/switch-ai-mode.mjs`](scripts/switch-ai-mode.mjs)。
