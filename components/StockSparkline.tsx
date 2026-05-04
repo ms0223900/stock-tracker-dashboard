@@ -1,14 +1,16 @@
 "use client";
 
 import { TWSE_DOWN, TWSE_NEUTRAL, TWSE_UP } from "@/lib/constants";
-import { Line, LineChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
+import type { ChartPoint } from "@/lib/yahoo-finance";
+import { useId, useMemo } from "react";
+import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 
 interface StockSparklineProps {
-  data: { price: number }[];
+  data: ChartPoint[];
   trend?: "up" | "down" | "neutral";
 }
 
-function calcTrend(data: { price: number }[]): "up" | "down" | "neutral" {
+function calcTrend(data: ChartPoint[]): "up" | "down" | "neutral" {
   if (data.length < 2) return "neutral";
   const first = data[0].price;
   const last = data[data.length - 1].price;
@@ -21,47 +23,60 @@ export default function StockSparkline({
   data,
   trend: forcedTrend,
 }: StockSparklineProps) {
+  const uid = useId().replace(/:/g, "");
   const trend = forcedTrend ?? calcTrend(data);
   const color =
     trend === "up" ? TWSE_UP : trend === "down" ? TWSE_DOWN : TWSE_NEUTRAL;
 
+  const series = useMemo(
+    () => data.map((d, idx) => ({ idx, price: d.price })),
+    [data],
+  );
+
+  const gradId = `spark-grad-${uid}`;
+
   if (data.length < 2) {
     return (
-      <div className="w-full h-full flex items-center justify-center">
-        <svg
-          className="w-full"
-          viewBox="0 0 100 40"
-          preserveAspectRatio="none"
-        >
+      <div className="w-full h-14 flex items-center justify-center rounded-[10px] bg-surface-container-lowest border border-outline-variant/60">
+        <svg className="w-full max-h-5 px-2" viewBox="0 0 100 24" preserveAspectRatio="none">
           <line
             x1={0}
-            y1={20}
+            y1={12}
             x2={100}
-            y2={20}
+            y2={12}
             stroke={TWSE_NEUTRAL}
             strokeWidth={2}
             vectorEffect="non-scaling-stroke"
+            opacity={0.35}
           />
         </svg>
       </div>
     );
   }
 
-
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={data} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-        <XAxis hide />
-        <YAxis hide domain={['dataMin', 'dataMax']} />
-        <Line
-          type="monotone"
-          dataKey="price"
-          stroke={color}
-          strokeWidth={2}
-          dot={false}
-          isAnimationActive={false}
-        />
-      </LineChart>
-    </ResponsiveContainer>
+    <div className="w-full h-14 rounded-[10px] bg-surface-container-lowest border border-outline-variant/60 overflow-hidden">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={series} margin={{ top: 4, right: 2, bottom: 2, left: 2 }}>
+          <defs>
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={0.35} />
+              <stop offset="100%" stopColor={color} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <XAxis dataKey="idx" type="number" hide domain={["dataMin", "dataMax"]} />
+          <YAxis hide domain={["dataMin", "dataMax"]} />
+          <Area
+            type="monotone"
+            dataKey="price"
+            stroke={color}
+            strokeWidth={2}
+            fill={`url(#${gradId})`}
+            dot={false}
+            isAnimationActive={false}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
   );
 }

@@ -9,9 +9,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "ZenTrade TW | 台股投資看板",
+  title: "股價看板 | 台股追蹤",
   description:
-    "查詢即時台股股價、設定目標價、透過 Telegram 接收通知。",
+    "查詢即時台股股價、設定目標價、透過 Telegram 接收達標通知。",
 };
 
 export default function RootLayout({
@@ -27,7 +27,7 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         />
       </head>
-      <body className="min-h-screen bg-background text-on-background antialiased">
+      <body className="min-h-screen bg-background text-on-background font-sans antialiased">
         {children}
       </body>
     </html>

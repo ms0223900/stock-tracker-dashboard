@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 
 import { TWSE_DOWN, TWSE_NEUTRAL, TWSE_UP } from "@/lib/constants";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, formatVolumeCompact } from "@/lib/format";
 import type { StockPrice } from "@/lib/yahoo-finance";
 import {
   Area,
@@ -23,11 +23,13 @@ type ChartRow = { idx: number; time: Date; price: number };
 interface StockResultCardProps {
   stockData: StockPrice | null;
   queryError: string | null;
+  queryLoading: boolean;
 }
 
 export default function StockResultCard({
   stockData,
   queryError,
+  queryLoading,
 }: StockResultCardProps) {
   const chartSeries: ChartRow[] = useMemo(() => {
     if (!stockData?.chartData?.length) return [];
@@ -61,28 +63,6 @@ export default function StockResultCard({
     return `price-area-${stockData.symbol.replace(/[^a-zA-Z0-9]/g, "-")}-${stockData.updatedAt.getTime()}`;
   }, [stockData]);
 
-  // Error state
-  if (queryError) {
-    return (
-      <div className="col-span-12 lg:col-span-8 bg-surface-container-lowest border border-outline-variant rounded-xl p-lg">
-        <div className="rounded-lg bg-error-container px-4 py-3 text-body-sm text-on-error-container">
-          {queryError}
-        </div>
-      </div>
-    );
-  }
-
-  // Empty state (no query yet)
-  if (!stockData) return null;
-
-  const isUp =
-    stockData.previousClose !== null &&
-    stockData.currentPrice >= stockData.previousClose;
-  const lineColor = isUp ? TWSE_UP : stockData.previousClose !== null ? TWSE_DOWN : TWSE_NEUTRAL;
-
-  const formatTime = (date: Date) =>
-    date.toLocaleTimeString("zh-TW", { hour12: false });
-
   const formatUpdatedLabel = (date: Date) =>
     date.toLocaleString("zh-TW", {
       year: "numeric",
@@ -90,64 +70,98 @@ export default function StockResultCard({
       day: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
+      second: "2-digit",
       hour12: false,
     });
 
-  const formatNumber = (n: number) => n.toLocaleString("zh-TW");
+  // 頂部錯誤改由 ErrorBanner；此處不重複顯示 queryError
+  if (queryError) return null;
+
+  if (queryLoading && !stockData) {
+    return (
+      <section className="w-full rounded-2xl border border-outline-variant bg-surface-container-lowest p-6 sm:p-7 min-h-[200px] flex flex-col items-center justify-center gap-3">
+        <svg
+          className="h-8 w-8 animate-spin text-primary"
+          viewBox="0 0 24 24"
+          fill="none"
+          aria-hidden
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+          />
+        </svg>
+        <p className="text-sm text-on-surface-variant">查詢股價中…</p>
+      </section>
+    );
+  }
+
+  if (!stockData) {
+    return (
+      <section className="w-full rounded-2xl border border-dashed border-outline-variant bg-surface-container-lowest/80 p-6 sm:p-7">
+        <p className="text-sm text-on-surface-variant text-center leading-relaxed">
+          尚無報價。請輸入完整代號（例如 2330.TW）後按「查詢股價」。
+        </p>
+      </section>
+    );
+  }
+
+  const isUp =
+    stockData.previousClose !== null &&
+    stockData.currentPrice >= stockData.previousClose;
+  const lineColor = isUp ? TWSE_UP : stockData.previousClose !== null ? TWSE_DOWN : TWSE_NEUTRAL;
 
   return (
-    <div className="col-span-12 lg:col-span-8 bg-surface-container-lowest border border-outline-variant rounded-xl p-lg overflow-hidden relative">
-      {/* Company info + price */}
-      <div className="flex justify-between items-start mb-lg">
-        <div>
-          <div className="flex items-center gap-sm mb-xs">
-            <h1 className="text-headline-md font-semibold">
-              {stockData.symbol}
-            </h1>
-            <span className="px-3 py-1 bg-surface-container-highest text-primary text-label-caps font-semibold rounded-full">
-              Semiconductors
-            </span>
-          </div>
-          <p className="text-outline font-body-sm">Taiwan Stock Exchange</p>
+    <section className="w-full rounded-2xl border border-outline-variant bg-surface-container-lowest p-6 sm:p-7 overflow-hidden">
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-start">
+        <div className="min-w-0">
+          <h2 className="text-2xl sm:text-[28px] font-bold text-on-surface tracking-tight">
+            {stockData.symbol}
+          </h2>
+          <p className="mt-1.5 text-[13px] text-on-surface-variant">
+            更新時間 · {formatUpdatedLabel(stockData.updatedAt)}
+          </p>
         </div>
-        <div className="text-right">
-          <p
-            className={`text-display-lg font-semibold ${isUp ? "text-twse-up" : "text-twse-down"}`}
-          >
+        <div className="text-left sm:text-right shrink-0">
+          <p className="text-3xl sm:text-[36px] font-bold text-primary tabular-nums leading-none">
             {formatPrice(stockData.currentPrice)}
           </p>
+          <p className="mt-1 text-[13px] text-on-surface-variant">TWD</p>
           {stockData.change !== null && stockData.changePercent !== null && (
             <div
-              className={`flex items-center justify-end gap-xs ${isUp ? "text-twse-up" : "text-twse-down"}`}
+              className={`mt-2 flex flex-wrap items-center gap-1 sm:justify-end text-sm font-medium tabular-nums ${isUp ? "text-twse-up" : "text-twse-down"}`}
             >
-              <span className="material-symbols-outlined text-sm">
+              <span className="material-symbols-outlined text-base" aria-hidden>
                 {isUp ? "trending_up" : "trending_down"}
               </span>
-              <span className="text-data-mono">
+              <span>
                 {stockData.change > 0 ? "+" : ""}
-                {stockData.change.toFixed(2)} (
+                {stockData.change.toFixed(2)}（
                 {stockData.changePercent > 0 ? "+" : ""}
-                {stockData.changePercent.toFixed(2)}%)
+                {stockData.changePercent.toFixed(2)}%）
               </span>
             </div>
           )}
-          {chartSeries.length === 0 ? (
-            <span className="text-body-sm text-outline">
-              更新於 {formatTime(stockData.updatedAt)}
-            </span>
-          ) : null}
         </div>
       </div>
 
-      {/* Chart */}
       {chartSeries.length > 0 && maxEntry && minEntry && (
-        <div className="mb-lg rounded-xl border border-outline-variant bg-surface-container-lowest overflow-hidden">
-          <div className="flex flex-wrap items-center justify-between gap-sm px-md pt-md pb-sm">
+        <div className="mt-5 rounded-[14px] border border-outline-variant bg-surface-container-lowest overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 pt-4 pb-2">
             <p className="text-[11px] text-on-surface-variant shrink-0">
               上次更新：{formatUpdatedLabel(stockData.updatedAt)}
             </p>
             <div
-              className="flex items-center gap-0.5 text-on-surface-variant text-xs"
+              className="flex flex-wrap items-center gap-0.5 text-on-surface-variant text-xs"
               role="group"
               aria-label="圖表區間（課程版僅 1D 有資料）"
             >
@@ -156,7 +170,7 @@ export default function StockResultCard({
                   key={p}
                   className={
                     p === "1D"
-                      ? "px-2.5 py-1 rounded-full bg-surface-container-high text-on-surface font-semibold"
+                      ? "px-2.5 py-1 rounded-full bg-secondary-container text-on-surface font-semibold"
                       : "px-2 py-1 rounded-full opacity-60"
                   }
                 >
@@ -165,7 +179,7 @@ export default function StockResultCard({
               ))}
             </div>
           </div>
-          <div className="h-56 w-full md:h-64 px-2 pb-md">
+          <div className="h-48 w-full sm:h-52 px-2 pb-2">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart
                 data={chartSeries}
@@ -183,7 +197,7 @@ export default function StockResultCard({
                   contentStyle={{
                     backgroundColor: "var(--color-surface-container-lowest)",
                     border: "1px solid var(--color-outline-variant)",
-                    borderRadius: "8px",
+                    borderRadius: "12px",
                     fontSize: "14px",
                     color: "var(--color-on-surface)",
                   }}
@@ -200,15 +214,12 @@ export default function StockResultCard({
                   }}
                   formatter={(value) => {
                     const v = Number(value);
-                    return [
-                      `$${v.toLocaleString("zh-TW", { minimumFractionDigits: 2 })}`,
-                      "價格",
-                    ];
+                    return [formatPrice(v), "價格"];
                   }}
                 />
                 <ReferenceLine
                   y={avgPrice}
-                  stroke="var(--color-outline-variant)"
+                  stroke="var(--color-chart-grid)"
                   strokeDasharray="4 4"
                   label={{
                     value: "AVG",
@@ -219,14 +230,14 @@ export default function StockResultCard({
                 />
                 <ReferenceLine
                   y={maxEntry.price}
-                  stroke="var(--color-outline-variant)"
+                  stroke="var(--color-chart-grid)"
                   strokeDasharray="4 4"
                 />
                 <Area
                   type="monotone"
                   dataKey="price"
                   stroke={lineColor}
-                  strokeWidth={2}
+                  strokeWidth={2.5}
                   fill={`url(#${gradientId})`}
                   dot={false}
                   activeDot={{ r: 5, fill: lineColor, stroke: "#fff", strokeWidth: 2 }}
@@ -262,39 +273,33 @@ export default function StockResultCard({
               </AreaChart>
             </ResponsiveContainer>
           </div>
-          <p className="px-md pb-sm text-[11px] text-on-surface-variant">
-            當日走勢 · Recharts AreaChart · Yahoo Finance
+          <p className="px-4 pb-3 text-xs text-on-surface-variant">
+            當日走勢（示意）· Recharts AreaChart · Yahoo Finance
+          </p>
+          <p className="px-4 pb-3 text-[11px] text-on-surface-variant -mt-2">
+            漲跌視覺遵循台股紅漲綠跌
           </p>
         </div>
       )}
 
-      {/* OHLC grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-md border-t border-outline-variant pt-md">
-        <div>
-          <p className="text-label-caps text-outline mb-xs">OPEN</p>
-          <p className="text-data-mono text-title-sm">
-            {formatPrice(stockData.open)}
-          </p>
-        </div>
-        <div>
-          <p className="text-label-caps text-outline mb-xs">HIGH</p>
-          <p className="text-data-mono text-title-sm text-twse-up">
-            {formatPrice(stockData.high)}
-          </p>
-        </div>
-        <div>
-          <p className="text-label-caps text-outline mb-xs">LOW</p>
-          <p className="text-data-mono text-title-sm text-twse-down">
-            {formatPrice(stockData.low)}
-          </p>
-        </div>
-        <div>
-          <p className="text-label-caps text-outline mb-xs">VOLUME</p>
-          <p className="text-data-mono text-title-sm">
-            {formatNumber(stockData.volume)}
-          </p>
-        </div>
+      <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {(
+          [
+            ["最高", formatPrice(stockData.high), "text-twse-up"],
+            ["最低", formatPrice(stockData.low), "text-twse-down"],
+            ["開盤", formatPrice(stockData.open), "text-on-surface"],
+            ["成交量", formatVolumeCompact(stockData.volume), "text-on-surface"],
+          ] as const
+        ).map(([label, value, valueClass]) => (
+          <div
+            key={label}
+            className="rounded-[14px] bg-surface-container-low px-3.5 py-3.5"
+          >
+            <p className="text-xs text-on-surface-variant mb-1">{label}</p>
+            <p className={`text-base font-semibold tabular-nums ${valueClass}`}>{value}</p>
+          </div>
+        ))}
       </div>
-    </div>
+    </section>
   );
 }

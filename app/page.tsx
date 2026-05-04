@@ -1,13 +1,9 @@
 "use client";
 
-import MobileBottomNav from "@/components/MobileBottomNav";
-import NewsBanner from "@/components/NewsBanner";
-import SideNavBar from "@/components/SideNavBar";
-import StockQueryForm from "@/components/StockQueryForm";
+import DashboardHeader from "@/components/DashboardHeader";
+import ErrorBanner from "@/components/ErrorBanner";
+import QueryAndTrackCard from "@/components/QueryAndTrackCard";
 import StockResultCard from "@/components/StockResultCard";
-import TargetPriceForm from "@/components/TargetPriceForm";
-import TelegramInfoCard from "@/components/TelegramInfoCard";
-import TopNavBar from "@/components/TopNavBar";
 import WatchlistCard from "@/components/WatchlistCard";
 import { useStockQuery } from "@/hooks/useStockQuery";
 import { useWatchlist } from "@/hooks/useWatchlist";
@@ -49,70 +45,51 @@ export default function HomePage() {
     setWatchlist,
   });
 
+  /** 顯著錯誤：API 查價失敗、Supabase 儲存失敗（驗證錯誤於欄位下方顯示） */
+  const topBanner = queryError ?? saveError ?? null;
+
   return (
-    <>
-      <TopNavBar />
-      <div className="flex max-w-[1280px] mx-auto min-h-[calc(100vh-64px)]">
-        <SideNavBar />
-        <main className="flex-1 p-lg lg:p-xl overflow-x-hidden pb-24 md:pb-lg">
-          <StockQueryForm
-            symbol={symbol}
-            queryLoading={queryLoading}
-            symbolError={symbolError}
-            onSymbolChange={onSymbolChange}
-            onQuery={handleQuery}
-            onKeyDown={handleSymbolKeyDown}
-          />
+    <div className="min-h-screen bg-background text-on-background pb-10">
+      <DashboardHeader />
 
-          {(stockData || queryError) && (
-            <div className="grid grid-cols-12 gap-lg mt-lg">
-              <StockResultCard
-                stockData={stockData}
-                queryError={queryError}
-              />
+      <div className="w-full max-w-[1280px] mx-auto px-4 sm:px-10 flex flex-col gap-6">
+        {topBanner ? <ErrorBanner message={topBanner} /> : null}
 
-              {stockData && (
-                <div className="col-span-12 lg:col-span-4 flex flex-col gap-lg">
-                  <TargetPriceForm
-                    targetPrice={targetPrice}
-                    targetPriceError={targetPriceError}
-                    saving={saving}
-                    saveError={saveError}
-                    onTargetPriceChange={onTargetPriceChange}
-                    onSave={() => handleSave(stockData)}
-                  />
-                  <TelegramInfoCard />
-                </div>
-              )}
+        <QueryAndTrackCard
+          symbol={symbol}
+          targetPrice={targetPrice}
+          queryLoading={queryLoading}
+          saving={saving}
+          hasStockResult={!!stockData}
+          symbolError={symbolError}
+          targetPriceError={targetPriceError}
+          onSymbolChange={onSymbolChange}
+          onTargetPriceChange={onTargetPriceChange}
+          onQuery={handleQuery}
+          onSave={() => handleSave(stockData)}
+          onSymbolKeyDown={handleSymbolKeyDown}
+        />
 
-              <WatchlistCard
-                watchlist={watchlist}
-                watchlistLoading={watchlistLoading}
-                deletingId={deletingId}
-                chartDataMap={chartDataMap}
-                onDelete={handleDelete}
-              />
+        <StockResultCard
+          stockData={stockData}
+          queryError={queryError}
+          queryLoading={queryLoading}
+        />
 
-              <NewsBanner />
-            </div>
-          )}
+        <WatchlistCard
+          watchlist={watchlist}
+          watchlistLoading={watchlistLoading}
+          deletingId={deletingId}
+          chartDataMap={chartDataMap}
+          onDelete={handleDelete}
+        />
 
-          {!stockData && !queryError && (
-            <div className="grid grid-cols-12 gap-lg mt-lg">
-              <WatchlistCard
-                watchlist={watchlist}
-                watchlistLoading={watchlistLoading}
-                deletingId={deletingId}
-                chartDataMap={chartDataMap}
-                onDelete={handleDelete}
-              />
-
-              <NewsBanner />
-            </div>
-          )}
-        </main>
+        <footer className="pt-5 text-center">
+          <p className="text-xs text-on-surface-variant">
+            資料僅供課程 Demo · 非投資建議
+          </p>
+        </footer>
       </div>
-      <MobileBottomNav />
-    </>
+    </div>
   );
 }
