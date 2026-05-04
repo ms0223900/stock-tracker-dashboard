@@ -24,12 +24,22 @@ interface StockResultCardProps {
   stockData: StockPrice | null;
   queryError: string | null;
   queryLoading: boolean;
+  targetPrice: string;
+  targetPriceError: string | null;
+  saving: boolean;
+  onTargetPriceChange: (value: string) => void;
+  onSave: () => void;
 }
 
 export default function StockResultCard({
   stockData,
   queryError,
   queryLoading,
+  targetPrice,
+  targetPriceError,
+  saving,
+  onTargetPriceChange,
+  onSave,
 }: StockResultCardProps) {
   const chartSeries: ChartRow[] = useMemo(() => {
     if (!stockData?.chartData?.length) return [];
@@ -120,6 +130,8 @@ export default function StockResultCard({
     stockData.currentPrice >= stockData.previousClose;
   const lineColor = isUp ? TWSE_UP : stockData.previousClose !== null ? TWSE_DOWN : TWSE_NEUTRAL;
 
+  const saveDisabled = saving;
+
   return (
     <section className="w-full rounded-2xl border border-outline-variant bg-surface-container-lowest p-6 sm:p-7 overflow-hidden">
       <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-start">
@@ -131,26 +143,64 @@ export default function StockResultCard({
             更新時間 · {formatUpdatedLabel(stockData.updatedAt)}
           </p>
         </div>
-        <div className="text-left sm:text-right shrink-0">
-          <p className="text-3xl sm:text-[36px] font-bold text-primary tabular-nums leading-none">
-            {formatPrice(stockData.currentPrice)}
-          </p>
-          <p className="mt-1 text-[13px] text-on-surface-variant">TWD</p>
-          {stockData.change !== null && stockData.changePercent !== null && (
-            <div
-              className={`mt-2 flex flex-wrap items-center gap-1 sm:justify-end text-sm font-medium tabular-nums ${isUp ? "text-twse-up" : "text-twse-down"}`}
-            >
-              <span className="material-symbols-outlined text-base" aria-hidden>
-                {isUp ? "trending_up" : "trending_down"}
-              </span>
-              <span>
-                {stockData.change > 0 ? "+" : ""}
-                {stockData.change.toFixed(2)}（
-                {stockData.changePercent > 0 ? "+" : ""}
-                {stockData.changePercent.toFixed(2)}%）
-              </span>
+        <div className="flex w-full flex-col gap-3.5 sm:w-auto sm:max-w-[min(100%,420px)] sm:items-end">
+          <div className="text-left sm:text-right shrink-0">
+            <p className="text-3xl sm:text-[36px] font-bold text-primary tabular-nums leading-none">
+              {formatPrice(stockData.currentPrice)}
+            </p>
+            <p className="mt-1 text-[13px] text-on-surface-variant">TWD</p>
+            {stockData.change !== null && stockData.changePercent !== null && (
+              <div
+                className={`mt-2 flex flex-wrap items-center gap-1 sm:justify-end text-sm font-medium tabular-nums ${isUp ? "text-twse-up" : "text-twse-down"}`}
+              >
+                <span className="material-symbols-outlined text-base" aria-hidden>
+                  {isUp ? "trending_up" : "trending_down"}
+                </span>
+                <span>
+                  {stockData.change > 0 ? "+" : ""}
+                  {stockData.change.toFixed(2)}（
+                  {stockData.changePercent > 0 ? "+" : ""}
+                  {stockData.changePercent.toFixed(2)}%）
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-end sm:justify-end sm:gap-3">
+            <div className="w-full min-w-0 sm:w-[200px] sm:shrink-0">
+              <label
+                htmlFor="target-price"
+                className="block text-[13px] font-semibold text-on-surface mb-2 sm:text-right"
+              >
+                目標股價
+              </label>
+              <input
+                id="target-price"
+                className="h-12 w-full rounded-[14px] border border-outline-variant bg-surface-container-low px-[18px] text-[15px] font-medium text-on-surface placeholder:text-on-surface-variant/70 focus:outline-none focus:ring-2 focus:ring-primary/25"
+                placeholder="0"
+                type="number"
+                min={0}
+                step="any"
+                value={targetPrice}
+                onChange={(e) => onTargetPriceChange(e.target.value)}
+              />
+              {targetPriceError ? (
+                <p className="mt-1.5 text-sm text-error sm:text-right">{targetPriceError}</p>
+              ) : null}
             </div>
-          )}
+
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={saveDisabled}
+              className="inline-flex h-12 w-full shrink-0 items-center justify-center gap-2 rounded-full border border-outline-variant bg-secondary-container px-6 text-[15px] font-semibold text-on-surface hover:opacity-95 transition-opacity disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+            >
+              <span className="material-symbols-outlined text-primary text-[18px]" aria-hidden>
+                notifications_active
+              </span>
+              {saving ? "儲存中…" : "儲存目標股價"}
+            </button>
+          </div>
         </div>
       </div>
 
