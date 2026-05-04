@@ -120,13 +120,13 @@ export default function WatchlistCard({
                   <div>
                     <p className="text-xs text-on-surface-variant mb-0.5">最新價</p>
                     <p className={`text-[22px] font-bold tabular-nums ${latestPriceClass}`}>
-                      {formatPrice(item.last_price)}
+                      {formatPrice(item.last_price, item.currency)}
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-on-surface-variant mb-0.5">目標</p>
                     <p className="text-base font-semibold text-on-surface tabular-nums">
-                      {formatPrice(item.target_price)}
+                      {formatPrice(item.target_price, item.currency)}
                     </p>
                   </div>
                 </div>

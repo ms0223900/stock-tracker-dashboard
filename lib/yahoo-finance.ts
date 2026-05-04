@@ -5,6 +5,7 @@ export interface ChartPoint {
 
 export interface StockPrice {
   symbol: string;
+  currency: string;
   currentPrice: number;
   /** Yahoo chart `meta.regularMarketPrice` 有值時為 true；若為 false，代表 currentPrice 來自 quote.close 後備，可能等於昨收 */
   hasRegularMarketPriceFromMeta: boolean;
@@ -23,6 +24,7 @@ interface YahooChartResponse {
   chart: {
     result?: Array<{
       meta: {
+        currency?: string;
         regularMarketPrice?: number;
         regularMarketTime?: number;
         previousClose?: number;
@@ -141,6 +143,7 @@ async function fetchStockPriceRaw(symbol: string, url: string): Promise<StockPri
   }
 
   const quote = result.indicators.quote[0];
+  const currency = result.meta.currency ?? "TWD";
   const metaRegularMarketPrice = result.meta.regularMarketPrice;
   const hasRegularMarketPriceFromMeta = metaRegularMarketPrice != null;
   const fallbackClose = lastNonNull(quote.close);
@@ -183,6 +186,7 @@ async function fetchStockPriceRaw(symbol: string, url: string): Promise<StockPri
 
   return {
     symbol,
+    currency,
     currentPrice,
     hasRegularMarketPriceFromMeta,
     previousClose,

@@ -157,9 +157,9 @@ export default function StockResultCard({
             <p
               className={`text-3xl sm:text-[36px] font-bold tabular-nums leading-none ${headlinePriceClass}`}
             >
-              {formatPrice(stockData.currentPrice)}
+              {formatPrice(stockData.currentPrice, stockData.currency)}
             </p>
-            <p className="mt-1 text-[13px] text-on-surface-variant">TWD</p>
+            <p className="mt-1 text-[13px] text-on-surface-variant">{stockData.currency}</p>
             {stockData.change !== null && stockData.changePercent !== null && (
               <div
                 className={`mt-2 flex flex-wrap items-center gap-1 sm:justify-end text-sm font-medium tabular-nums ${changeRowClass}`}
@@ -275,7 +275,7 @@ export default function StockResultCard({
                   }}
                   formatter={(value) => {
                     const v = Number(value);
-                    return [formatPrice(v), "價格"];
+                    return [formatPrice(v, stockData.currency), "價格"];
                   }}
                 />
                 <ReferenceLine
@@ -311,7 +311,7 @@ export default function StockResultCard({
                   stroke="#fff"
                   strokeWidth={2}
                   label={{
-                    value: formatPrice(maxEntry.price),
+                    value: formatPrice(maxEntry.price, stockData.currency),
                     position: "top",
                     fill: "var(--color-on-surface-variant)",
                     fontSize: 11,
@@ -325,7 +325,7 @@ export default function StockResultCard({
                   stroke="#fff"
                   strokeWidth={2}
                   label={{
-                    value: formatPrice(minEntry.price),
+                    value: formatPrice(minEntry.price, stockData.currency),
                     position: "bottom",
                     fill: "var(--color-on-surface-variant)",
                     fontSize: 11,
@@ -346,9 +346,9 @@ export default function StockResultCard({
       <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
         {(
           [
-            ["最高", formatPrice(stockData.high), "text-twse-up"],
-            ["最低", formatPrice(stockData.low), "text-twse-down"],
-            ["開盤", formatPrice(stockData.open), "text-on-surface"],
+            ["最高", formatPrice(stockData.high, stockData.currency), "text-twse-up"],
+            ["最低", formatPrice(stockData.low, stockData.currency), "text-twse-down"],
+            ["開盤", formatPrice(stockData.open, stockData.currency), "text-on-surface"],
             ["成交量", formatVolumeCompact(stockData.volume), "text-on-surface"],
           ] as const
         ).map(([label, value, valueClass]) => (

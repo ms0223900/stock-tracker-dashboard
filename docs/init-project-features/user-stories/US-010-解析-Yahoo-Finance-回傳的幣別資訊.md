@@ -15,11 +15,11 @@
 - `fetchStockPrice()`、`fetchStockPriceServer()` 自動帶入幣別
 
 **驗收條件**：
-- [ ] 查詢 `2330.TW` 時回傳 `currency: "TWD"`
-- [ ] 查詢 `AAPL` 時回傳 `currency: "USD"`
-- [ ] 查詢 `00700.HK` 時回傳 `currency: "HKD"`（若 Yahoo 有提供）
-- [ ] 若 Yahoo 未回傳 `currency` 欄位，預設為 `"TWD"`（不中斷流程）
-- [ ] 現有所有引用 `StockPrice` 的程式碼仍可正常編譯
+- [x] 查詢 `2330.TW` 時回傳 `currency: "TWD"`
+- [x] 查詢 `AAPL` 時回傳 `currency: "USD"`
+- [x] 查詢 `00700.HK` 時回傳 `currency: "HKD"`（若 Yahoo 有提供）
+- [x] 若 Yahoo 未回傳 `currency` 欄位，預設為 `"TWD"`（不中斷流程）
+- [x] 現有所有引用 `StockPrice` 的程式碼仍可正常編譯
 
 **依賴關係**：
 - US-006（既有 Yahoo Finance 模組）

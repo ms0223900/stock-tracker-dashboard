@@ -2,6 +2,7 @@
 export interface WatchlistItem {
   id: string;
   symbol: string;
+  currency?: string;
   target_price: number;
   last_price: number | null;
   previousClose: number | null;
