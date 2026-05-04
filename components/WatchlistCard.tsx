@@ -1,6 +1,7 @@
 "use client";
 
 import { formatPrice } from "@/lib/format";
+import { twseWatchlistLatestTextClass } from "@/lib/twse-display";
 import { getTwseMovement, type ChartPoint } from "@/lib/yahoo-finance";
 import type { WatchlistItem } from "@/types/watchlist";
 import StockSparkline from "./StockSparkline";
@@ -84,19 +85,11 @@ export default function WatchlistCard({
           {watchlist.map((item) => {
             const movement = getTwseMovement(item.last_price, item.previousClose);
             const sparkData = chartDataMap[item.id] || [];
-            const trend =
-              movement === "up" ? "up" : movement === "down" ? "down" : "neutral";
-
-            const latestPriceClass =
-              item.last_price !== null
-                ? item.previousClose !== null
-                  ? movement === "up"
-                    ? "text-twse-up"
-                    : movement === "down"
-                      ? "text-twse-down"
-                      : "text-twse-neutral"
-                  : "text-primary"
-                : "text-primary";
+            const latestPriceClass = twseWatchlistLatestTextClass(
+              movement,
+              item.last_price,
+              item.previousClose,
+            );
 
             const notifiedLabel = formatNotifiedAt(item.notified_at);
 
@@ -138,7 +131,7 @@ export default function WatchlistCard({
                   </div>
                 </div>
 
-                <StockSparkline data={sparkData} trend={trend} />
+                <StockSparkline data={sparkData} trend={movement} />
 
                 <div className="flex flex-wrap items-center gap-2">
                   {item.is_notified ? (

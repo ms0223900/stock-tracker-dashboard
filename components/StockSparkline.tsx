@@ -1,6 +1,6 @@
 "use client";
 
-import { TWSE_DOWN, TWSE_NEUTRAL, TWSE_UP } from "@/lib/constants";
+import { twseMovementHex } from "@/lib/twse-display";
 import type { ChartPoint } from "@/lib/yahoo-finance";
 import { useId, useMemo } from "react";
 import { Area, AreaChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
@@ -25,8 +25,7 @@ export default function StockSparkline({
 }: StockSparklineProps) {
   const uid = useId().replace(/:/g, "");
   const trend = forcedTrend ?? calcTrend(data);
-  const color =
-    trend === "up" ? TWSE_UP : trend === "down" ? TWSE_DOWN : TWSE_NEUTRAL;
+  const color = twseMovementHex(trend);
 
   const series = useMemo(
     () => data.map((d, idx) => ({ idx, price: d.price })),
@@ -44,7 +43,7 @@ export default function StockSparkline({
             y1={12}
             x2={100}
             y2={12}
-            stroke={TWSE_NEUTRAL}
+            stroke={twseMovementHex("neutral")}
             strokeWidth={2}
             vectorEffect="non-scaling-stroke"
             opacity={0.35}

@@ -2,8 +2,13 @@
 
 import { useMemo } from "react";
 
-import { TWSE_DOWN, TWSE_NEUTRAL, TWSE_UP } from "@/lib/constants";
 import { formatPrice, formatVolumeCompact } from "@/lib/format";
+import {
+  twseMovementHex,
+  twseMovementTextClass,
+  twseMovementTrendIcon,
+  twseQuoteHeadlineTextClass,
+} from "@/lib/twse-display";
 import { getTwseMovement, type StockPrice } from "@/lib/yahoo-finance";
 import {
   Area,
@@ -126,28 +131,13 @@ export default function StockResultCard({
   }
 
   const movement = getTwseMovement(stockData.currentPrice, stockData.previousClose);
-  const lineColor =
-    movement === "up" ? TWSE_UP : movement === "down" ? TWSE_DOWN : TWSE_NEUTRAL;
-  const headlinePriceClass =
-    stockData.previousClose !== null
-      ? movement === "up"
-        ? "text-twse-up"
-        : movement === "down"
-          ? "text-twse-down"
-          : "text-twse-neutral"
-      : "text-primary";
-  const changeRowClass =
-    movement === "up"
-      ? "text-twse-up"
-      : movement === "down"
-        ? "text-twse-down"
-        : "text-twse-neutral";
-  const changeIcon =
-    movement === "up"
-      ? "trending_up"
-      : movement === "down"
-        ? "trending_down"
-        : "trending_flat";
+  const lineColor = twseMovementHex(movement);
+  const headlinePriceClass = twseQuoteHeadlineTextClass(
+    movement,
+    stockData.previousClose !== null,
+  );
+  const changeRowClass = twseMovementTextClass(movement);
+  const changeIcon = twseMovementTrendIcon(movement);
 
   const saveDisabled = saving;
 
