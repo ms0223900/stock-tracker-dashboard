@@ -29,7 +29,7 @@ export default function StockQueryForm({
           </span>
           <input
             className="w-full pl-10 pr-4 py-3 bg-surface-container-low border border-outline-variant rounded-md font-body-md focus:outline-none focus:ring-2 focus:ring-primary/20"
-            placeholder="e.g. 2330.TW"
+            placeholder="e.g. AAPL、2330.TW"
             type="text"
             value={symbol}
             onChange={(e) => onSymbolChange(e.target.value)}
