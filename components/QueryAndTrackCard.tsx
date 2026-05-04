@@ -37,9 +37,6 @@ export default function QueryAndTrackCard({
     <section className="w-full rounded-2xl border border-outline-variant bg-surface-container-lowest p-6 sm:p-7 shadow-sm">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <h2 className="text-xl font-bold text-on-surface">查詢與追蹤</h2>
-        <span className="inline-flex items-center rounded-full bg-success px-3 py-1.5 text-xs font-semibold text-success-foreground w-fit">
-          單頁完成
-        </span>
       </div>
 
       <p className="mt-4 text-sm text-on-surface-variant leading-relaxed">
