@@ -277,29 +277,6 @@
                           "fontFamily": "$--font-primary",
                           "fontSize": 20,
                           "fontWeight": "700"
-                        },
-                        {
-                          "type": "frame",
-                          "id": "as8Lc",
-                          "name": "formBadge",
-                          "fill": "$--color-success",
-                          "cornerRadius": 999,
-                          "padding": [
-                            6,
-                            12
-                          ],
-                          "children": [
-                            {
-                              "type": "text",
-                              "id": "TIXgg",
-                              "name": "formBadgeText",
-                              "fill": "$--color-success-foreground",
-                              "content": "單頁完成",
-                              "fontFamily": "$--font-secondary",
-                              "fontSize": 12,
-                              "fontWeight": "600"
-                            }
-                          ]
                         }
                       ]
                     },
@@ -308,7 +285,7 @@
                       "id": "bfT5R",
                       "name": "formHint",
                       "fill": "$--muted-foreground",
-                      "content": "格式須為 ○○○○.TW；目標價須大於 0。達標後會發送 Telegram 通知。",
+                      "content": "格式須為 英數字；目標價須大於 0。達標後會發送通知。",
                       "fontFamily": "$--font-secondary",
                       "fontSize": 14,
                       "fontWeight": "normal"
@@ -325,7 +302,7 @@
                           "type": "frame",
                           "id": "CcAiy",
                           "name": "symCol",
-                          "width": "fill_container",
+                          "width": 109,
                           "layout": "vertical",
                           "gap": 8,
                           "children": [
