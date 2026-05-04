@@ -27,7 +27,7 @@
 
 - 使用者可輸入完整台股股票代號，例如 `2330.TW`。
 - 使用者可查詢目前股價，畫面顯示股票代號、目前價格與更新時間。
-- 若 API 提供資料，顯示今日最高價、最低價、開盤價與成交量。
+- 若 API 提供資料，顯示今日最高價、最低價、開盤價與成交量（**最高／最低**之資料來源與走勢圖標記的語意差異見 §8 「最高／最低價」）。
 - 使用者可輸入大於 0 的目標股價並儲存追蹤項目。
 - 追蹤項目儲存在 Supabase `watchlist` 表。
 - 系統可比較目前股價與目標股價。
@@ -105,7 +105,19 @@
 - Endpoint：`https://query1.finance.yahoo.com/v8/finance/chart/{symbol}`
 - Demo 可使用 `2330.TW`。
 - 需要將 API response 正規化為應用程式內部型別，至少包含 symbol、current price、update time、high、low、open、volume。
+- **「最高／最低價」有兩層語意，實作與顯示需區分**（見下方「最高／最低價」說明）。
 - API 失敗時顯示「目前無法取得股價資料，請稍後再試」。
+
+#### 最高／最低價（OHLC 區塊 vs. 走勢圖標記）
+
+1. **結果卡下方 OHLC 網格之「最高」「最低」**  
+   數值來自 Yahoo chart API `indicators.quote` 之 `high`、`low` 與 `close` 陣列，經正規化後寫入 `StockPrice.high` / `StockPrice.low`，介面與 spec 一致採 **數字型別**（缺資料時 fallback 可能為 `0`，與 `formatPrice` 顯示一致）。正規化規則（與 `lib/yahoo-finance.ts` 對齊）：
+   - **high**：`quote.high` 陣列中所有有效數值之**最大值**；若無有效值，改取 `quote.close` 有效數值之最大值；若仍無，取 `quote.high` **最後一個**有效值；皆無則為 `0`。
+   - **low**：`quote.low` 陣列中所有有效數值之**最小值**；若無有效值，改取 `quote.close` 有效數值之最小值；若仍無，取 `quote.low` **最後一個**有效值；皆無則為 `0`。
+
+2. **走勢圖（AreaChart）上之最高／最低標記（ReferenceDot／ReferenceLine）**  
+   取本次查詢所建之 **盤中成交價序列** `chartData`：`timestamp` 與 `quote.close` 一一對應、略過 `close` 為 null 的點，在此序列上計算價格之**全域最大與最小**，並標示對應時刻。  
+   **注意**：此極值僅代表「回傳之 close 採樣點」的高低，**不**等同第 1 點由 `quote.high`／`quote.low` 正規化後之數值；兩者可能因採樣粒度或 Yahoo 欄位定義而略有差異，屬預期行為。
 
 ### Supabase
 

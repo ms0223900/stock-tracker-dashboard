@@ -10,13 +10,13 @@
 
 **輸出格式**：
 - 畫面顯示：股票代號、目前價格、更新時間
-- 若 API 有提供：今日最高價、最低價、開盤價、成交量
+- OHLC 網格顯示「最高」「最低」「開盤」「成交量」：`high`／`low`／`open`／`volume` 來自 Yahoo `indicators.quote` 經 `lib/yahoo-finance.ts` 正規化（`high`／`low` 之 fallback 鏈見 `docs/spec.md`「最高／最低價」）；與走勢圖上依 `close` 序列算的極值**語意不同**，規格以 spec 為準
 - 查詢中顯示 loading 狀態
 - 查詢失敗顯示錯誤訊息
 
 **驗收條件**：
 - [x] 輸入 `2330.TW` 點擊查詢，畫面顯示目前股價與更新時間
-- [x] 顯示今日最高價、最低價、開盤價、成交量（若 API 有提供）
+- [x] 顯示今日最高價、最低價、開盤價、成交量（若 API 有提供）；**最高／最低**之正規化規則與走勢圖極值之區分見 `docs/spec.md` §8
 - [x] 查詢期間按鈕顯示 loading 狀態，防止重複送出
 - [x] API 失敗時畫面顯示「目前無法取得股價資料，請稍後再試」
 - [x] 股價資訊區在未查詢前不顯示，查詢成功後才出現
@@ -43,7 +43,7 @@
 狀態：✅ 通過
 
 - `components/StockResultCard.tsx` 的 OHLC 網格顯示 `open`、`high`、`low`、`volume`。
-- `lib/yahoo-finance.ts` 從 Yahoo chart API 組出上述欄位。
+- `lib/yahoo-finance.ts` 從 Yahoo chart API 組出上述欄位；`high`／`low` 為 quote 陣列之 max／min 與 `close`／尾端 fallback，**不**等於圖表內對 `chartData`（僅 close）取極值。
 
 ---
 
