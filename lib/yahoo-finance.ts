@@ -42,44 +42,34 @@ interface YahooChartResponse {
   };
 }
 
+/** Yahoo 1m OHLCV：單一序列內常穿插 null，先壓成有效數字再聚合。 */
+function filterNonNullNumbers(nums: (number | null)[] | undefined): number[] {
+  if (!nums?.length) return [];
+  return nums.filter((x): x is number => x != null);
+}
+
 function lastNonNull<T>(arr: (T | null)[]): T | undefined {
-  for (let i = arr.length - 1; i >= 0; i--) {
-    if (arr[i] !== null) return arr[i] as T;
-  }
-  return undefined;
+  return arr.findLast((v): v is T => v != null);
 }
 
 /** 分鐘線序列：第一個非 null（開盤／當日第一根有效報價）。 */
 function firstNonNull<T>(arr: (T | null)[] | undefined): T | undefined {
-  if (!arr?.length) return undefined;
-  for (let i = 0; i < arr.length; i++) {
-    if (arr[i] !== null && arr[i] !== undefined) return arr[i] as T;
-  }
-  return undefined;
+  return arr?.find((v): v is T => v != null);
 }
 
 function maxNonNull(nums: (number | null)[] | undefined): number | undefined {
-  if (!nums?.length) return undefined;
-  const valid = nums.filter((x): x is number => x != null);
-  if (!valid.length) return undefined;
-  return Math.max(...valid);
+  const valid = filterNonNullNumbers(nums);
+  return valid.length ? Math.max(...valid) : undefined;
 }
 
 function minNonNull(nums: (number | null)[] | undefined): number | undefined {
-  if (!nums?.length) return undefined;
-  const valid = nums.filter((x): x is number => x != null);
-  if (!valid.length) return undefined;
-  return Math.min(...valid);
+  const valid = filterNonNullNumbers(nums);
+  return valid.length ? Math.min(...valid) : undefined;
 }
 
 /** 當日 1 分 K：各棒成交量加總為全日量（勿取最後一根）。 */
 function sumNonNull(nums: (number | null)[] | undefined): number {
-  if (!nums?.length) return 0;
-  let s = 0;
-  for (const x of nums) {
-    if (x !== null && x !== undefined) s += x;
-  }
-  return s;
+  return filterNonNullNumbers(nums).reduce((a, b) => a + b, 0);
 }
 
 export const PRICE_EQ_EPS = 0.01;
