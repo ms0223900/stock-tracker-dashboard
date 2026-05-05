@@ -98,7 +98,8 @@ lib/               ← Application + Infrastructure 分區；domain types 不依
 
 ## Current State｜目前狀態
 
-- 以 repo 與 [`docs/spec.md`](docs/spec.md) §12 為準；規則切換見 [`scripts/switch-ai-mode.mjs`](scripts/switch-ai-mode.mjs)。
+- 即時股價更新已定案為 **前端輪詢**：**固定 60 秒**間隔，每一輪刷新**股價結果區**（若有）與**追蹤清單內每一筆**（見 [`docs/spec.md`](docs/spec.md) §4「前端輪詢（定案）」）。
+- 其餘以 repo 與 [`docs/spec.md`](docs/spec.md) 為準；規則切換見 [`scripts/switch-ai-mode.mjs`](scripts/switch-ai-mode.mjs)。
 
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence

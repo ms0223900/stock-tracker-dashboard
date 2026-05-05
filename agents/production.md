@@ -108,4 +108,5 @@ lib/               ← Application + Infrastructure 分區；domain types 不依
 
 ## Current State｜目前狀態
 
-- 詳見 repo 現況與 [`docs/spec.md`](docs/spec.md)；切換命令見本檔 Commands，切換實作見 [`scripts/switch-ai-mode.mjs`](scripts/switch-ai-mode.mjs)，設計說明見 [`rules-switch/chat-gpt/ai-rule-switch-guideline.md`](rules-switch/chat-gpt/ai-rule-switch-guideline.md)。
+- 即時股價更新已定案為 **前端輪詢**：**固定 60 秒**間隔，每一輪刷新**股價結果區**（若有）與**追蹤清單內每一筆**（見 [`docs/spec.md`](docs/spec.md) §4「前端輪詢（定案）」）。
+- 其餘詳見 repo 現況與 [`docs/spec.md`](docs/spec.md)；切換命令見本檔 Commands，切換實作見 [`scripts/switch-ai-mode.mjs`](scripts/switch-ai-mode.mjs)，設計說明見 [`rules-switch/chat-gpt/ai-rule-switch-guideline.md`](rules-switch/chat-gpt/ai-rule-switch-guideline.md)。
