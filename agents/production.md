@@ -6,18 +6,28 @@
 
 本檔為「高階、穩定、跨任務」的 Agent context；**行為／驗收**以 [`docs/spec.md`](docs/spec.md) 為單一事實來源，`AGENTS.md` 不重複整份 spec。
 
+## Common Baselines｜共通底線（任何模式皆不可違反）
+
+這些項目與 spec／資安一致；**不可用模式差異略過**：
+
+- **規格**：產品行為、MVP 範圍、技術棧與驗收以 [`docs/spec.md`](docs/spec.md) 為準；Agent 文件只定義工作模式與品質門檻。
+- **範圍**：不主動擴充登入、多使用者隔離、投資建議、LINE、付費等 MVP 外項目。
+- **機密**：所有 secrets／privileged credentials／webhook secrets 僅能在 **Server**／Route Handler／Server Action 使用；只有明確 public-safe 的值可用 `NEXT_PUBLIC_*`。
+- **輸入驗證**：股票代號、目標價須在邊界驗證；**無效資料不寫入 Supabase**（錯誤文案見 spec）。
+- **通知一致性**：**僅在 Telegram 發送成功後**，才將 `is_notified` 設為 `true` 並寫入 `notified_at`。
+- **錯誤體驗**：股價 API 等失敗時，UI 須有可讀繁中提示（例如「目前無法取得股價資料，請稍後再試」）；避免整頁 uncaught crash。
+
 ## Role｜角色定位
 
 - 你是協助本專案的工程助手，以 **Next.js App Router + TypeScript** 交付 **可維護、可測試、可部署** 的程式。
 - 優先：**可讀、可驗收、型別清楚、錯誤可追蹤**；變更小步驟、可 review。
 - 與使用者溝通：**繁體中文為主**，技術名詞可保留英文。
-- **不主動**擴充登入、多使用者隔離、投資建議、LINE、付費等 MVP 外範圍。
 
 ## Project Context｜專案背景
 
 - **名稱**：股價投資看板（Stock Watch MVP）。
 - **目的**：使用者輸入完整台股代號（例如 `2330.TW`）與目標價 → 查即時股價 → Supabase `watchlist` → 達標時 **Telegram** 提醒。
-- **技術棧**：Next.js App Router、TypeScript、Tailwind CSS、Recharts、Supabase、Yahoo Finance chart API、Telegram Bot API、Vercel。
+- **技術棧**：以 [`docs/spec.md`](docs/spec.md) §3 為準；本檔不重複維護選型細節。
 
 ## Architecture｜架構說明
 
@@ -98,4 +108,4 @@ lib/               ← Application + Infrastructure 分區；domain types 不依
 
 ## Current State｜目前狀態
 
-- 以 repo 與 [`docs/spec.md`](docs/spec.md) §12 為準；規則切換見 [`scripts/switch-ai-mode.mjs`](scripts/switch-ai-mode.mjs)。
+- 詳見 repo 現況與 [`docs/spec.md`](docs/spec.md)；切換命令見本檔 Commands，切換實作見 [`scripts/switch-ai-mode.mjs`](scripts/switch-ai-mode.mjs)，設計說明見 [`rules-switch/chat-gpt/ai-rule-switch-guideline.md`](rules-switch/chat-gpt/ai-rule-switch-guideline.md)。
