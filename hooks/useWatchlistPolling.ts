@@ -112,7 +112,9 @@ export function useWatchlistPolling({
     });
 
     // Fire-and-forget: trigger server-side target check & Telegram notification
-    fetch("/api/check-prices").catch(() => {});
+    fetch("/api/check-prices").catch(() => {
+      // TODO: add error handling for production mode
+    });
   };
 
   useEffect(() => {
