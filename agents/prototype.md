@@ -15,10 +15,13 @@
 
 - **規格**：產品行為、MVP 範圍、技術棧與驗收以 [`docs/spec.md`](docs/spec.md) 為準；Agent 文件只定義工作模式與品質門檻。
 - **範圍**：不主動擴充登入、多使用者隔離、投資建議、LINE、付費等 MVP 外項目。
-- **機密**：所有 secrets／privileged credentials／webhook secrets 僅能在 **Server**／Route Handler／Server Action 使用；只有明確 public-safe 的值可用 `NEXT_PUBLIC_*`。
-- **輸入驗證**：股票代號、目標價須在邊界驗證；**無效資料不寫入 Supabase**（錯誤文案見 spec）。
-- **通知一致性**：**僅在 Telegram 發送成功後**，才將 `is_notified` 設為 `true` 並寫入 `notified_at`。
-- **錯誤體驗**：股價 API 等失敗時，UI 須有可讀繁中提示（例如「目前無法取得股價資料，請稍後再試」）；避免整頁 uncaught crash。
+
+---
+
+1. **機密**：所有 secrets／privileged credentials／webhook secrets 僅能在 **Server**／Route Handler／Server Action 使用；只有明確 public-safe 的值可用 `NEXT_PUBLIC_*`。
+2. **輸入驗證**：股票代號、目標價須在邊界驗證；**無效資料不寫入 Supabase**（錯誤文案見 spec）。
+3. **通知一致性**：**僅在 Telegram 發送成功後**，才將 `is_notified` 設為 `true` 並寫入 `notified_at`。
+4. **錯誤體驗**：股價 API 等失敗時，UI 須有可讀繁中提示（例如「目前無法取得股價資料，請稍後再試」）；避免整頁 uncaught crash。
 
 ## Role｜角色定位
 
