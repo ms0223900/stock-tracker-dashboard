@@ -3,7 +3,7 @@
 ## 依賴圖
 
 ```
-US-01 即時股價查詢
+US-01 即時股價查詢（含必做 OHLC／成交量）
   │
   ▼
 US-02 追蹤項目儲存（依賴 US-01 的股價查詢流程）
@@ -13,13 +13,38 @@ US-03 追蹤清單顯示與輪詢（依賴 US-02 的 watchlist 資料）
   │
   ├──────────────┐
   ▼               ▼
-US-04 Telegram    US-05 折線圖與刪除
-通知（依賴輪詢）  （依賴清單 UI，optional）
+US-04 Telegram    US-05 走勢圖／Sparkline／刪除
+通知（與 US-03  │ （spec「最好有」，optional）
+  協調寫入       │
+  last_price）   │
   │               │
   ▼               ▼
 US-06 部署到 Vercel 與整體驗收
-（依賴 US-01～US-04 核心流程；US-05 optional）
+（必做：US-01～04；US-05 optional）
 ```
+
+## Spec §4「必做」與「最好有」對照（User Story 拆法）
+
+以下為 `docs/spec.md` §4 與本資料夾 US 的對應，**驗收 scope 以此為準**，避免將「最好有」誤當成可延後的必做（或相反）。
+
+| spec 條文（摘要） | 必做／最好有 | 主要 US |
+|------------------|-------------|---------|
+| 完整代號查價、顯示代號／價格／更新時間 | 必做 | US-01 |
+| 有資料時顯示今日高／低／開／量（OHLC 網格） | 必做 | **US-01** |
+| 儲存目標價、`watchlist`、驗證 | 必做 | US-02 |
+| 前端輪詢 60 秒、全量刷新、容錯、卸載停止 | 必做 | US-03 |
+| 輪詢／更新流程寫入 `last_price`（spec §7、§9） | 必做 | US-03 + **US-04**（實作上常合併為同一支 API） |
+| 達標 Telegram、成功後 `is_notified`／`notified_at`、不重複 | 必做 | US-04 |
+| 錯誤訊息可讀、不崩潰 | 必做 | US-01、02、03、04（依情節） |
+| 部署 Vercel | 必做 | US-06 |
+| 結果卡當日走勢圖、清單 sparkline | **最好有** | **US-05** |
+| 刪除追蹤 | **最好有** | **US-05** |
+| Vercel Cron 背景檢查 | **最好有**（且定案以輪詢為主） | 未單獨開 US；可日後加 |
+
+### spec §6 與 §4 的差異（說明用）
+
+- §6「畫面至少包含」列有**追蹤區 sparkline**等；§4 將走勢圖、sparkline、刪除列為**最好有**。
+- **本專案 User Story 以 §4 為產品範圍准據**：未完成 US-05 仍可視為必做 MVP 驗收通過；若要與設計稿 §6 完全一致，則須完成 **US-05**（或於 spec 修訂中註明例外）。
 
 ### 關鍵耦合說明
 
@@ -27,8 +52,9 @@ US-06 部署到 Vercel 與整體驗收
 |---|---|
 | US-02 → US-01 | US-01 建立了 `StockPrice` 型別與 Yahoo Finance 查詢函式，US-02 可直接沿用 |
 | US-03 → US-02 | US-02 建立 `watchlist` 資料表與 Supabase client，US-03 讀取同一資料表 |
-| US-04 → US-03 | US-03 的輪詢機制是 US-04 的觸發源；`last_price` 也是 US-03 寫入 |
+| US-03 ↔ US-04 | **輪詢觸發**後須完成：`last_price` 寫入 DB（**對每筆成功查價**，含未達標）→ 達標則 Telegram → 成功才標記 `is_notified`。實務上常以**單一 server API** 承接，以避免 client 與 DB 狀態分歧 |
 | US-05 → US-03 | US-03 的卡片結構是 US-05 加入 sparkline 與刪除按鈕的基礎 |
+| US-05 → US-01 | 走勢圖／sparkline 依賴 US-01 已正規化之 **chartData**；**OHLC 必做顯示**已在 US-01，US-05 可只做樣式對齊設計稿 |
 | US-06 → All | 最後一張驗收型 US，依賴前面的完整功能 |
 
 ---
@@ -50,6 +76,7 @@ US-06 部署到 Vercel 與整體驗收
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | US-02, US-03, US-05 | 是 |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | US-02, US-03, US-05 | 是 |
+| `SUPABASE_SERVICE_ROLE_KEY` | US-04（視 RLS／寫入策略）、US-06 設定 | **否**（僅 server） |
 | `TELEGRAM_BOT_TOKEN` | US-04 | 否（僅 server） |
 | `TELEGRAM_CHAT_ID` | US-04 | 否（僅 server） |
 
@@ -74,7 +101,7 @@ components/
 app/
   page.tsx            US-01   首頁（逐步擴充）
   api/
-    check-prices/route.ts US-04  比對股價與觸發通知
+    check-prices/route.ts US-04  查價、寫入 last_price、達標 Telegram
     delete-watchlist/route.ts US-05  刪除追蹤項目
 ```
 
@@ -98,7 +125,7 @@ app/
 若時間不足，可依以下優先順序調整：
 
 1. **核心流程必做**：US-01 → US-02 → US-03 → US-04 → US-06（完整核心 MVP）
-2. **視覺強化選做**：US-05（不影響核心流程是否跑通，但影響展示觀感）
+2. **視覺與清單加值（最好有）**：US-05（不影響核心是否跑通；要對齊設計稿 §6 完整版面時建議做）
 3. **最低可行部署**：US-01 + US-02 + US-03 + US-06（至少展示查詢與儲存、不用通知也能部署驗證）
 
 ---
@@ -112,6 +139,8 @@ app/
 | 單筆錯誤拖垮整頁 | US-03 | 輪詢時必須用 `Promise.allSettled`，不可用 `Promise.all` |
 | 通知成功前更新 `is_notified` | US-04 | 順序錯誤會造成發送失敗但資料已標記為已通知 |
 | 環境變數混入前端 | US-04 | Telegram Token 只能用 server 端 Route Handler，不可前後端共用 |
+| 只更新畫面不寫 `last_price` | US-03, US-04 | spec 要求持久化；若 DB 無 `last_price`，比對／通知難以正確或無法驗收 |
+| 將 OHLC 必做誤認為 US-05 | US-01, US-05 | spec §4 必做之 OHLC 在 **US-01**；US-05 走勢圖為「最好有」，與 OHLC 網格語意不同（§8） |
 | 圖表資料語意混淆 | US-05 | 走勢圖 close 極值與 OHLC 網格 high/low 計算方式不同，需分開標示 |
 
 ---
