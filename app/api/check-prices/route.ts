@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { fetchStockPriceServer, isAmbiguousPrevCloseSnapshot } from "@/lib/yahoo-finance";
+import {
+  isLinePushConfigured,
+  LinePushHttpError,
+  sendLineText,
+} from "@/lib/line";
+import { buildStockHitLineMessage } from "@/lib/stock-hit-line-message";
 import { sendTelegramMessage } from "@/lib/telegram";
 
 interface WatchlistRow {
@@ -58,13 +64,48 @@ export async function GET() {
 
         // Check trigger: price >= target and not already notified
         if (triggerPrice >= item.target_price && !item.is_notified) {
-          const sent = await sendTelegramMessage(
+          const telegramSent = await sendTelegramMessage(
             item.symbol,
             triggerPrice,
             item.target_price,
           );
 
-          if (sent) {
+          let lineSent = true;
+          let lineDetail = "";
+          if (telegramSent && isLinePushConfigured()) {
+            const lineUserId = process.env.LINE_USER_ID?.trim();
+            if (!lineUserId) {
+              lineSent = false;
+              lineDetail = "LINE_USER_ID 未設定";
+            } else {
+              try {
+                await sendLineText(
+                  lineUserId,
+                  buildStockHitLineMessage(
+                    item.symbol,
+                    triggerPrice,
+                    item.target_price,
+                  ),
+                );
+              } catch (err) {
+                lineSent = false;
+                if (err instanceof LinePushHttpError) {
+                  lineDetail = `LINE HTTP ${err.status}: ${err.bodySnippet}`;
+                  console.error(
+                    `${item.symbol} LINE notify failed:`,
+                    err.status,
+                    err.bodySnippet,
+                  );
+                } else {
+                  const msg = err instanceof Error ? err.message : String(err);
+                  lineDetail = msg;
+                  console.error(`${item.symbol} LINE notify failed:`, msg);
+                }
+              }
+            }
+          }
+
+          if (telegramSent && lineSent) {
             await supabase
               .from("watchlist")
               .update({
@@ -75,8 +116,14 @@ export async function GET() {
               .eq("id", item.id);
 
             results.push(`${item.symbol}: notified ($${triggerPrice} >= $${item.target_price})`);
+          } else if (!telegramSent) {
+            results.push(
+              `${item.symbol}: trigger met but Telegram send failed, is_notified kept false`,
+            );
           } else {
-            results.push(`${item.symbol}: trigger met but Telegram send failed, is_notified kept false`);
+            results.push(
+              `${item.symbol}: trigger met, Telegram ok but LINE failed (${lineDetail}), is_notified kept false`,
+            );
           }
         } else if (triggerPrice >= item.target_price && item.is_notified) {
           results.push(`${item.symbol}: already notified, skipped`);

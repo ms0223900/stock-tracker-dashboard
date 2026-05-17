@@ -99,6 +99,7 @@ lib/               ← Application + Infrastructure 分區；domain types 不依
 ## Current State｜目前狀態
 
 - 即時股價更新已定案為 **前端輪詢**：**固定 60 秒**間隔，每一輪刷新**股價結果區**（若有）與**追蹤清單內每一筆**（見 [`docs/spec.md`](docs/spec.md) §4「前端輪詢（定案）」）。
+- `/api/check-prices` 達標通知：預設 **Telegram**；若另設定 `LINE_CHANNEL_ACCESS_TOKEN` 與 `LINE_USER_ID`，於 Telegram 成功後再送 **LINE Push**，**兩者皆成功**才將 `is_notified` 設為 `true`（見 [`docs/spec.md`](docs/spec.md) 第八節 LINE、第九節）。
 - 其餘以 repo 與 [`docs/spec.md`](docs/spec.md) 為準；規則切換見 [`scripts/switch-ai-mode.mjs`](scripts/switch-ai-mode.mjs)。
 
 <!-- gitnexus:start -->

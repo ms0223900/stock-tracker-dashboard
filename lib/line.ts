@@ -1,5 +1,13 @@
 const LINE_PUSH_URL = "https://api.line.me/v2/bot/message/push";
 
+/** 達標通知是否應嘗試 LINE Push（token 與 userId 皆已設定）。 */
+export function isLinePushConfigured(): boolean {
+  return Boolean(
+    process.env.LINE_CHANNEL_ACCESS_TOKEN?.trim() &&
+      process.env.LINE_USER_ID?.trim(),
+  );
+}
+
 /** LINE Push Message API 回傳非 2xx 時拋出，含 status 與 response body 摘要供除錯。 */
 export class LinePushHttpError extends Error {
   readonly status: number;

@@ -74,9 +74,9 @@
 
 | 現況 | 本功能期望 |
 | --- | --- |
-| 已有 [`app/api/check-prices/route.ts`](../../app/api/check-prices/route.ts)（GET）以 Supabase + Yahoo + **Telegram** 檢查達標 | **擴充**為在同一輪迴圈中於達標時額外呼叫 LINE（或抽出共用「檢查」函式，由 Telegram／LINE 模組分別送出）；**或**新增獨立 Route 專責 LINE，但仍須共用「達標判定與 DB 更新」邏輯，避免不一致。 |
-| 前端輪詢會呼叫 `/api/check-prices`（見 [`hooks/useWatchlistPolling.ts`](../../hooks/useWatchlistPolling.ts)） | 須定義：**達標時是否同時發 Telegram + LINE**，或依環境變數僅啟用其一，避免未預期的雙重通知或與 Cron 競態；建議於實作 PR 中明示決策並寫入環境變數說明。 |
-| `lib/telegram.ts` 為既有通知出口 | 新增 `lib/line.ts`（或同等命名）僅負責 HTTP 與 LINE 錯誤解析；達標文案可集中在 `lib/stock-notification.ts` 或與 Telegram 訊息建構共用常數，維持繁中與單一來源。 |
+| 已有 [`app/api/check-prices/route.ts`](../../app/api/check-prices/route.ts)（GET）以 Supabase + Yahoo + **Telegram** 檢查達標 | **已對齊實作**：達標分支內 Telegram 成功後，若 `LINE_CHANNEL_ACCESS_TOKEN` 與 `LINE_USER_ID` 皆設定則再送 LINE；**兩者皆成功**才更新 `is_notified`（見主 [`docs/spec.md`](../spec.md) 第八節 LINE）。 |
+| 前端輪詢會呼叫 `/api/check-prices`（見 [`hooks/useWatchlistPolling.ts`](../../hooks/useWatchlistPolling.ts)） | **已定案**：Telegram 優先；LINE 為選用（依 env）；不因 Cron 另開分叉判定（US-003 仍呼叫同一路由／邏輯）。 |
+| `lib/telegram.ts` 為既有通知出口 | `lib/line.ts` 負責 Push HTTP；達標 LINE 文案見 [`lib/stock-hit-line-message.ts`](../../lib/stock-hit-line-message.ts)。 |
 
 ---
 

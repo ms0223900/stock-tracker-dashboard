@@ -8,7 +8,7 @@
 - Supabase `watchlist`：`symbol`、`target_price`、`last_price`、`is_notified`、`notified_at`（見主 [`docs/spec.md`](../../spec.md) 第七節資料模型）
 - 伺服端查價：沿用既有 Yahoo／`fetchStockPriceServer`（或同等）取得本次價格；達標判定與既有 [`app/api/check-prices/route.ts`](../../../app/api/check-prices/route.ts) 語意對齊（含 `isAmbiguousPrevCloseSnapshot` 等既有規則時須一致）
 - **US-001** 已完成：`sendLineText` 與環境變數可用
-- **待產品決策**：達標時是否與 Telegram **並行**推送，或依環境變數僅啟用單一管道（見功能 spec 第四節「與現有程式對齊」、第九節風險表）；實作 PR 須載明決策
+- **產品決策（已定案）**：達標時 **Telegram 優先**；若 `LINE_CHANNEL_ACCESS_TOKEN` 與 `LINE_USER_ID` 皆設定，於 Telegram 成功後再送 LINE；**兩者皆成功**才標記 `is_notified`（見主 [`docs/spec.md`](../../spec.md) 第八節 LINE、第九節）。
 
 **輸出格式**：
 - 達標且 `is_notified === false` 時呼叫 LINE Push；訊息為繁中可讀文字，至少含：**股票代號**、**目前股價**、**目標股價**、**觸發時間**（對齊主 spec Telegram 範例精神）
@@ -16,10 +16,12 @@
 - 文案建構與 LINE HTTP 分層（例如通知建構函式 vs `lib/line.ts`），避免與 Telegram 邏輯混寫難以維護；錯誤須可追蹤（禁止空 `catch`）
 
 **驗收條件**：
-- [ ] 僅當本次判定之價格 **大於或等於** `target_price` 且 `is_notified === false` 時才呼叫 LINE Push
-- [ ] LINE 成功後 DB 狀態符合「已通知」；失敗時 `is_notified`／`notified_at` 不因本次嘗試而被設為已通知
-- [ ] 同一筆追蹤在已通知後，再次呼叫檢查 API 不會重複發 LINE
-- [ ] 與既有 `/api/check-prices` 流程共用同一套達標判定與 DB 更新語意，或抽出共用模組後兩路一致（避免分叉邏輯）
+- [x] 僅當本次判定之價格 **大於或等於** `target_price` 且 `is_notified === false` 時才呼叫 LINE Push（與 Telegram 同一達標分支；LINE 僅在 Telegram 成功後嘗試）
+- [x] LINE 成功後 DB 狀態符合「已通知」；失敗時 `is_notified`／`notified_at` 不因本次嘗試而被設為已通知（若已設定 LINE：須 Telegram 與 LINE 皆成功才更新）
+- [x] 同一筆追蹤在已通知後，再次呼叫檢查 API 不會重複發 LINE
+- [x] 與既有 `/api/check-prices` 流程共用同一套達標判定與 DB 更新語意（同一 `triggerPrice` 分支內完成 Telegram／LINE）
+
+**產品決策（已定案並寫入主 [`docs/spec.md`](../../spec.md)）**：達標時 **Telegram 優先**；僅當 `LINE_CHANNEL_ACCESS_TOKEN` 與 `LINE_USER_ID` 皆設定時加發 LINE；**兩通道皆成功**才標記 `is_notified`。
 
 **依賴關係**：
 - **US-001**

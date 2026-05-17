@@ -142,6 +142,14 @@
 - 通知內容至少包含股票代號、目前股價、目標股價與觸發時間。
 - 發送失敗時不可把 `is_notified` 標記為 `true`。
 
+### LINE Messaging API（選用）
+
+- 使用 LINE Push Message API（`/api/check-prices` 達標流程）。
+- 環境變數：`LINE_CHANNEL_ACCESS_TOKEN`、`LINE_USER_ID`（皆須設定且僅 server 使用；見第十節）。
+- 通知文案為繁中文字，至少包含股票代號、目前股價、目標股價與觸發時間（與下方範例同一結構）。
+- **並行規則**：已設定 LINE 時，須 **Telegram 發送成功後**再發送 LINE；**兩者皆成功**後始將 `is_notified` 設為 `true`。若僅設定 Telegram（未設定 LINE），行為與原 MVP 相同。
+- LINE 發送失敗時不可把 `is_notified` 標記為 `true`（即使 Telegram 已成功）。
+
 通知範例：
 
 ```text
@@ -177,8 +185,8 @@
 1. 系統讀取追蹤項目。
 2. 系統取得每筆股票目前股價。
 3. 更新 `last_price`。
-4. 若 `last_price >= target_price` 且 `is_notified = false`，發送 Telegram。
-5. 通知成功後更新 `is_notified` 與 `notified_at`。
+4. 若 `last_price >= target_price` 且 `is_notified = false`，發送 Telegram；若已設定 LINE（見第八節「LINE Messaging API」），於 Telegram 成功後再發送 LINE Push。
+5. **Telegram** 成功，且（未設定 LINE **或** LINE 亦成功）後，更新 `is_notified` 與 `notified_at`。
 6. 已通知項目不重複通知。
 
 ## 10. 環境變數
@@ -188,6 +196,7 @@
 - `SUPABASE_SERVICE_ROLE_KEY`（如需 server-side 管理操作，僅 server 使用）
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_CHAT_ID`
+- （選用，達標 LINE 推播）`LINE_CHANNEL_ACCESS_TOKEN`、`LINE_USER_ID`
 
 敏感資訊不得提交到版本控制。
 
@@ -199,6 +208,7 @@
 - 輸入 `2330.TW` 與 `2200` 後按下儲存，Supabase `watchlist` 新增資料，刷新後仍可看到追蹤項目。
 - 當目前股價低於目標股價，不發送 Telegram，`is_notified` 維持 `false`。
 - 當目前股價大於或等於目標股價，Telegram 收到通知，內容包含股票代號、目前股價與目標股價。
+- （選用）若已設定 LINE 環境變數：達標時於 Telegram 成功後發送 LINE；**Telegram 與 LINE 皆成功**後始將 `is_notified` 設為 `true`。
 - 同一筆追蹤資料已通知後，不會在下次更新時重複發送。
 - 股價 API、Supabase 或 Telegram 發生錯誤時，畫面顯示清楚提示且不讓應用程式崩潰。
 - 部署到 Vercel 後，仍可查詢股價、新增追蹤項目、讀取資料並觸發通知。
