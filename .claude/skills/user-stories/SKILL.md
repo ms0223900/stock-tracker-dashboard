@@ -1,6 +1,6 @@
 ---
 name: user-stories
-description: Breaks product requirements, module decomposition, and solution documents into small implementation-ready user story task files with clear inputs, outputs, acceptance criteria, dependencies, priority, and related feature mapping. Use when the user asks to 拆 user stories、拆使用者故事、拆實作任務、依需求文件產生任務、or convert requirements into independently trackable markdown tasks.
+description: Breaks product requirements, module decomposition, and solution documents into small implementation-ready user story task files with clear inputs, outputs, acceptance criteria, dependencies, priority, and related feature mapping. After drafting the split, spawns a read-only sub agent to review whether the decomposition is reasonable before finalizing files. Use when the user asks to 拆 user stories、拆使用者故事、拆實作任務、依需求文件產生任務、or convert requirements into independently trackable markdown tasks.
 ---
 
 # User Stories / 使用者故事拆解
@@ -50,12 +50,30 @@ description: Breaks product requirements, module decomposition, and solution doc
      - **優先級**：使用 `P0`、`P1`、`P2`。
      - **相關功能**：對應功能模組、章節或需求編號。
 
-4. **輸出個別文件**
+4. **拆分後 review（獨立 sub agent）**
+   - **時機**：在步驟 2–3 已產出「完整草案」（每個 US 的標題、角色故事句、輸入／輸出、驗收、依賴、優先級、相關功能均已齊備）後、**尚未寫入**個別 US 檔案與 `README.md` 前執行。若使用者堅持先落檔，則可在寫檔後再以 sub agent 針對已寫入內容重跑同一套 review，並由父 Agent 修正檔案。
+   - **目的**：由**另一個對話脈絡**獨立檢視拆分是否合理，降低父 Agent 自我確認的盲點。
+   - **如何調用**：使用執行環境支援的 **sub agent／Task** 機制啟動**新 agent**（勿在同一段父對話中假裝「自己 review 自己」替代）。強烈建議設為 **readonly**（僅閱讀父 Agent 傳入的草案與來源摘要，**不得**直接改 repo 或寫檔）；review 結果以結構化文字回給父 Agent。
+   - **傳給 sub agent 的脈絡**（最少）：
+     - 原始需求／規格／模組拆解／解決方案的**摘要**或引用重點（父 Agent 整理）。
+     - **完整草案**：每個 US 一條（編號若已有則帶上），含標題、`作為／我想要／以便`、輸入、輸出、驗收條件清單、依賴、優先級、相關功能。
+     - 任何父 Agent **已知假設或未決議題**，避免 reviewer 誤判為漏拆。
+   - **Sub agent 產出格式**（應要求其遵守）：
+     - **`verdict`**：`pass` | `revise`（一行）。
+     - **`summary`**：2–5 句總評（繁中為主）。
+     - **`findings`**：分項列出問題與建議（可含：粒度、遺漏範圍、重複／可合併、依賴循環或含糊、優先級與波次是否合理、驗收是否可測）。
+     - **`concrete_changes`**（僅當 `verdict` 為 `revise`）：父 Agent 可直接照做的調整清單（例如「合併 US-A 與 US-B」「補 US-C 涵蓋錯誤處理」「釐清 US-D 依賴」）。
+   - **父 Agent 後續**：
+     - `pass`：進入步驟 5（寫入檔案）。
+     - `revise`：依 `concrete_changes` 修訂草案；若有**結構性變更**（例如合併／新增／刪除 US、大幅改依賴圖），應 **再次**啟動 sub agent review（至多再一輪；若仍有爭議，將 reviewer 異議摘要寫給使用者決策）。
+   - **跳過 review**：若使用者**明確**表示不要 review、只要快速草稿，才可略過並在輸出中註記「已依使用者要求略過 sub agent review」。
+
+5. **輸出個別文件**
    - 每個任務輸出為獨立 markdown 文件。
    - 文件名稱使用 `{任務名稱}.md`；若已有編號規則，沿用既有規則，例如 `US-002-查看我們的日常文章列表.md`。
    - 若實際寫檔，放在使用者指定的資料夾；未指定時先詢問目標位置。
 
-5. **產出總覽 README（多 US 時）**
+6. **產出總覽 README（多 US 時）**
    - 若此批輸出有 **3 個或以上**的 US 文件，必須在**同一個目錄**額外產出一份 `README.md`。
    - 產出前先掃描目標目錄中**既有的 US 文件**，與新產出的合併計算，將新舊 US 一併納入 README.md。
    - `README.md` 內容結構：
@@ -131,6 +149,7 @@ description: Breaks product requirements, module decomposition, and solution doc
 
 輸出前確認：
 
+- [ ] 已執行步驟 **4（sub agent review）** 並處理 `revise` 回饋（除非使用者明示略過）。
 - [ ] 每個 user story 都符合「作為...我想要...以便...」格式。
 - [ ] 每個任務都小到可以獨立實作與驗收。
 - [ ] 每個任務都有輸入格式、輸出格式、驗收條件、依賴關係、優先級與相關功能。
@@ -138,3 +157,23 @@ description: Breaks product requirements, module decomposition, and solution doc
 - [ ] 依賴關係沒有循環或含糊描述。
 - [ ] 文件名稱清楚且方便後續追蹤。
 - [ ] 若 US 數量 >= 3，已產出對應的 `README.md` 總覽文件。
+
+## Sub Agent Review Prompt Skeleton / 給 reviewer 的提示詞骨架
+
+父 Agent 啟動 sub agent 時，可將下列骨架填滿後作為 **`prompt`**：
+
+```markdown
+你是獨立的 User Story 拆分審查員。你只根據下面提供的資料做檢視，勿改程式或寫檔。
+
+【原始脈絡摘要】
+{父 Agent 整理的需求／規格／拆解／方案重點}
+
+【草案：待審視的 User Stories】
+{逐條貼上完整草案}
+
+【已知假設與待確認】
+{若無則寫「無」}
+
+請依本專案 user-stories skill 步驟 4 要求的格式輸出：verdict、summary、findings、concrete_changes（若適用）。
+審視重點：粒度、範圍覆蓋、重複或可合併、依賴是否無循環且可理解、優先級與交付波次是否合理、驗收是否足夠且可驗證。
+```
