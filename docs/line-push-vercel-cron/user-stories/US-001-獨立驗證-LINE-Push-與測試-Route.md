@@ -15,10 +15,10 @@
 - LINE API 失敗時可取得並記錄／回傳 **status** 與 **response body 摘要**（利於除錯）
 
 **驗收條件**：
-- [ ] 本機呼叫測試 Route 後，指定 `LINE_USER_ID` 之 LINE 可收到固定測試文案
-- [ ] `LINE_CHANNEL_ACCESS_TOKEN`、`LINE_USER_ID` 未寫死在程式碼中
-- [ ] 無將 token／userId 暴露於前端 bundle 或 `NEXT_PUBLIC_*`
-- [ ] LINE API 非 2xx 時有不吞錯的錯誤路徑（typed 或明確錯誤物件／訊息）
+- [ ] 本機呼叫測試 Route 後，指定 `LINE_USER_ID` 之 LINE 可收到固定測試文案（**程式已就緒**，請設定 `LINE_CHANNEL_ACCESS_TOKEN`、`LINE_USER_ID` 後執行 `curl -X POST http://localhost:3000/api/test-line` 驗證）
+- [x] `LINE_CHANNEL_ACCESS_TOKEN`、`LINE_USER_ID` 未寫死在程式碼中
+- [x] 無將 token／userId 暴露於前端 bundle 或 `NEXT_PUBLIC_*`
+- [x] LINE API 非 2xx 時有不吞錯的錯誤路徑（typed 或明確錯誤物件／訊息）
 
 **依賴關係**：
 - 無（前置為 LINE Developers 手動設定與 env 填寫）
