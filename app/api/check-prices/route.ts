@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
 import { runWatchlistPriceCheck } from "@/lib/run-watchlist-price-check";
+import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
@@ -19,5 +19,5 @@ export async function GET() {
   return NextResponse.json({
     message: result.message,
     results: result.results,
-  });
+  })
 }
