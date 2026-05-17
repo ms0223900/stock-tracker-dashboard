@@ -6,7 +6,7 @@ import {
   LinePushHttpError,
   sendLineText,
 } from "@/lib/line";
-import { buildStockHitLineMessage } from "@/lib/stock-hit-line-message";
+import { buildStockHitNotificationMessage } from "@/lib/stock-hit-notification-message";
 import { sendTelegramMessage } from "@/lib/telegram";
 
 interface WatchlistRow {
@@ -81,7 +81,7 @@ export async function GET() {
               try {
                 await sendLineText(
                   lineUserId,
-                  buildStockHitLineMessage(
+                  buildStockHitNotificationMessage(
                     item.symbol,
                     triggerPrice,
                     item.target_price,
