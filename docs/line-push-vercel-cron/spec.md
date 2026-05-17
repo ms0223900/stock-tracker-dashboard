@@ -58,7 +58,7 @@
 | 項目 | 說明 |
 | --- | --- |
 | 設定方式 | 於 [`vercel.json`](../../vercel.json) 設定 `crons`，`path` 為 **`/api/cron/check-prices`**（`GET`）；與 `/api/check-prices` 共用 [`lib/run-watchlist-price-check.ts`](../../lib/run-watchlist-price-check.ts)，避免分叉邏輯。 |
-| 排程 | 預設每 5 分鐘 `*/5 * * * *`（可依方案調整）；**Vercel Hobby** 對頻率有限制，必要時改為每日一次等（見官方文件）。 |
+| 排程 | 預設每日 **01:00 UTC**（`0 1 * * *`，見 [`vercel.json`](../../vercel.json)）。**Vercel Hobby**：官方規定 Cron **僅能每天執行一次**；比「每日一次」更頻繁的表達式會在 **deploy 時直接失敗**（見主 [`docs/spec.md`](../spec.md) 第十節英文原文摘要）。付費方案另依官方配額。 |
 | 安全 | 環境變數 **`CRON_SECRET`**：生產環境由 Vercel 自動附加 `Authorization: Bearer <CRON_SECRET>`；另支援 **`x-cron-secret`** 供本機／手動 curl。未設定 `CRON_SECRET` 時路由一律 **401**，不執行查價／推播。 |
 | HTTP 方法 | Vercel Cron 預設以 **GET** 呼叫 path；若實作僅接受 POST，須改為 **GET 與 POST 共用同一 handler** 或僅暴露 GET 給 Cron（與 Notion「第 7 步」提醒一致）。 |
 
@@ -118,6 +118,7 @@
 ### Story C（Vercel Cron）
 
 - [x] Cron 設為 GET 時仍能執行檢查邏輯；無有效 secret 時回傳 401，不執行推播。
+- [x] **Vercel Hobby**：`vercel.json` 之 `schedule` 符合「每日最多一次」；過頻表達式會於部署失敗（見主 spec 第十節英文原文）。
 - [ ] 部署至 Vercel 後，Production 環境變數設定正確且行為與本機一致（允許因網路／LINE 配額造成的時間差）（**須於平台上自行驗證**）。
 
 ---
@@ -135,7 +136,7 @@
 | --- | --- |
 | Telegram 與 LINE 雙管道 | 須決定達標時是否兩者皆發、或僅其一；若皆發，需在 UX／成本上可接受。 |
 | Cron 與前端輪詢競態 | 兩者可能短時間內先後觸發；依賴 DB `is_notified` 單一鎖定可避免重複推播，但仍可能「一管道成功、另一管道因已標記而跳過」— 須在實作上可接受。 |
-| Vercel Cron 與方案 | 免費／付費方案對 Cron 的支援與限制以 Vercel 官方文件為準。 |
+| Vercel Cron 與方案 | **Hobby**：Cron 限每日一次，過頻 **`schedule` 會導致部署失敗**（見主 spec 第十節）。免費／付費方案差異以官方文件為準。 |
 | LINE userId 取得 | Demo 用 env；正式版若要每位使用者不同收訊者，需另開需求（Webhook、綁定流程）。 |
 
 ---

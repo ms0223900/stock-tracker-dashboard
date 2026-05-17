@@ -10,9 +10,13 @@
 | --- | --- | --- | --- | --- |
 | **001** | 獨立驗證 LINE Push 與測試 Route | P0 | — | `lib/line`、`POST /api/test-line`、環境變數，不經股價／DB |
 | **002** | 達標時推送 LINE 通知與 check-prices 整合 | P0 | US-001 | 達標文案、與既有檢查 API 共用語意、成功才更新 `is_notified` |
-| **003** | Vercel Cron 與排程端點驗證 | P1 | US-002 | `vercel.json` → `GET /api/cron/check-prices`、`CRON_SECRET`、`Authorization`／`x-cron-secret` |
+| **003** | Vercel Cron 與排程端點驗證 | P1 | US-002 | `vercel.json`、`GET /api/cron/check-prices`、`CRON_SECRET`；**Hobby 限每日一次 Cron**（過頻則 deploy 失敗） |
 
 ---
+
+## Vercel Hobby 與 Cron（重要）
+
+官方說明：**Hobby 帳號的 Cron 限每天執行一次**；若 `schedule` 比每日一次更頻繁，**部署會失敗**（`Cron expressions that would run more frequently will fail during deployment`）。細節與英文原文見主 [`docs/spec.md`](../../spec.md) 第十節。
 
 ## 依賴關係圖
 
@@ -33,7 +37,7 @@ US-003（Vercel Cron + secret + GET）
 ## 依賴說明
 
 - **US-001** 無程式內前置 US；需自行完成 LINE Developers channel 與本機／Vercel 環境變數。
-- **US-002** 必須在 US-001 完成後實作，否则会無法發送 LINE；並依賴既有後端查價與 `watchlist`。
+- **US-002** 必須在 US-001 完成後實作，否則無法發送 LINE；並依賴既有後端查價與 `watchlist`。
 - **US-003** 必須在 US-002 完成後實作，確保定時觸發走的是已驗證之檢查與通知邏輯。
 
 ---
