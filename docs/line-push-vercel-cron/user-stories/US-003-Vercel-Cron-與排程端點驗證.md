@@ -15,10 +15,20 @@
 - Production 部署後 Cron 或手動帶 secret 之請求可成功跑完；失敗時可於 Vercel Logs 追蹤
 
 **驗收條件**：
-- [ ] `crons` 設定之 path 與 repo 內 Route 路徑一致，且該 Route 支援 **GET**（符合 Vercel Cron 預設行為）
-- [ ] 缺少或錯誤的 cron secret 無法觸發查價／通知邏輯
-- [ ] 部署至 Vercel Production 後，環境變數（含 `CRON_SECRET`、`LINE_*`）設定正確且行為與本機驗證一致（允許網路／配額造成之時間差）
-- [ ] 不因 Cron 啟用而繞過「成功才標記 `is_notified`」規則（與 US-002 一致）
+- [x] `crons` 設定之 path 與 repo 內 Route 路徑一致，且該 Route 支援 **GET**（符合 Vercel Cron 預設行為）
+- [x] 缺少或錯誤的 cron secret 無法觸發查價／通知邏輯
+- [ ] 部署至 Vercel Production 後，環境變數（含 `CRON_SECRET`、`LINE_*`）設定正確且行為與本機驗證一致（允許網路／配額造成之時間差）（**請於 Vercel 設定 env 並部署後自行驗證**）
+- [x] 不因 Cron 啟用而繞過「成功才標記 `is_notified`」規則（與 US-002 一致；與 `/api/check-prices` 共用 `runWatchlistPriceCheck`）
+
+**手動驗證範例**（本機需 `CRON_SECRET` 已寫入 `.env.local`）：
+
+```bash
+curl -sS "http://localhost:3000/api/cron/check-prices" \
+  -H "Authorization: Bearer YOUR_CRON_SECRET"
+# 或
+curl -sS "http://localhost:3000/api/cron/check-prices" \
+  -H "x-cron-secret: YOUR_CRON_SECRET"
+```
 
 **依賴關係**：
 - **US-002**（檢查與 LINE 整合須先正確）

@@ -57,9 +57,9 @@
 
 | 項目 | 說明 |
 | --- | --- |
-| 設定方式 | 於 Vercel 專案設定 Cron（例如 `vercel.json` 的 `crons` 陣列，或平台後台對應設定），`path` 指向實際存在的 Route（見下節「與現有程式對齊」）。 |
-| 排程 | 由產品決定（Notion 範例為每 5 分鐘 `*/5 * * * *`）；須註明 **quota／方案限制** 以官方文件為準。 |
-| 安全 | Cron 觸發之請求須可驗證身分，例如自訂 header（Notion 範例：`x-cron-secret` 比對 `CRON_SECRET`）或 Vercel 建議之 `Authorization: Bearer` 模式；**嚴禁**無驗證的公開查價 + 推播 endpoint。 |
+| 設定方式 | 於 [`vercel.json`](../../vercel.json) 設定 `crons`，`path` 為 **`/api/cron/check-prices`**（`GET`）；與 `/api/check-prices` 共用 [`lib/run-watchlist-price-check.ts`](../../lib/run-watchlist-price-check.ts)，避免分叉邏輯。 |
+| 排程 | 預設每 5 分鐘 `*/5 * * * *`（可依方案調整）；**Vercel Hobby** 對頻率有限制，必要時改為每日一次等（見官方文件）。 |
+| 安全 | 環境變數 **`CRON_SECRET`**：生產環境由 Vercel 自動附加 `Authorization: Bearer <CRON_SECRET>`；另支援 **`x-cron-secret`** 供本機／手動 curl。未設定 `CRON_SECRET` 時路由一律 **401**，不執行查價／推播。 |
 | HTTP 方法 | Vercel Cron 預設以 **GET** 呼叫 path；若實作僅接受 POST，須改為 **GET 與 POST 共用同一 handler** 或僅暴露 GET 給 Cron（與 Notion「第 7 步」提醒一致）。 |
 
 ### 3.3 先不做（本文件刻意延後）
@@ -75,7 +75,7 @@
 | 現況 | 本功能期望 |
 | --- | --- |
 | 已有 [`app/api/check-prices/route.ts`](../../app/api/check-prices/route.ts)（GET）以 Supabase + Yahoo + **Telegram** 檢查達標 | **已對齊實作**：達標分支內 Telegram 成功後，若 `LINE_CHANNEL_ACCESS_TOKEN` 與 `LINE_USER_ID` 皆設定則再送 LINE；**兩者皆成功**才更新 `is_notified`（見主 [`docs/spec.md`](../spec.md) 第八節 LINE）。 |
-| 前端輪詢會呼叫 `/api/check-prices`（見 [`hooks/useWatchlistPolling.ts`](../../hooks/useWatchlistPolling.ts)） | **已定案**：Telegram 優先；LINE 為選用（依 env）；不因 Cron 另開分叉判定（US-003 仍呼叫同一路由／邏輯）。 |
+| 前端輪詢會呼叫 `/api/check-prices`（見 [`hooks/useWatchlistPolling.ts`](../../hooks/useWatchlistPolling.ts)） | **已定案**：維持無 `CRON_SECRET` 之 **`GET /api/check-prices`** 供前端；**定時排程**改為 **`GET /api/cron/check-prices`**（須通過 `CRON_SECRET`），與前者共用 `runWatchlistPriceCheck`。 |
 | `lib/telegram.ts` 為既有通知出口 | `lib/line.ts` 負責 Push HTTP；達標文案與 Telegram 共用 [`lib/stock-hit-notification-message.ts`](../../lib/stock-hit-notification-message.ts)。 |
 
 ---
@@ -117,8 +117,8 @@
 
 ### Story C（Vercel Cron）
 
-- [ ] Cron 設為 GET 時仍能執行檢查邏輯；無有效 secret 時回傳 401／403，不執行推播。
-- [ ] 部署至 Vercel 後，Production 環境變數設定正確且行為與本機一致（允許因網路／LINE 配額造成的時間差）。
+- [x] Cron 設為 GET 時仍能執行檢查邏輯；無有效 secret 時回傳 401，不執行推播。
+- [ ] 部署至 Vercel 後，Production 環境變數設定正確且行為與本機一致（允許因網路／LINE 配額造成的時間差）（**須於平台上自行驗證**）。
 
 ---
 

@@ -51,7 +51,7 @@
 - 當日股價走勢折線圖（StockResultCard）。
 - 追蹤清單卡片內含 sparkline 折線圖，資料來源與主折線圖相同（Yahoo Finance 當日 chartData），首次查詢後即有完整線圖。
 - 基本刪除追蹤項目。
-- Next.js API route 搭配 Vercel Cron 做背景自動檢查。
+- Next.js API route 搭配 Vercel Cron 做背景自動檢查：`GET /api/cron/check-prices`（須 `CRON_SECRET`，見第十節與 [`vercel.json`](../vercel.json)）。
 
 ### 先不做
 
@@ -189,6 +189,8 @@
 5. **Telegram** 成功，且（未設定 LINE **或** LINE 亦成功）後，更新 `is_notified` 與 `notified_at`。
 6. 已通知項目不重複通知。
 
+（選用）若部署於 Vercel 並設定 Cron：`GET /api/cron/check-prices` 依排程執行與上述相同之檢查與通知（須設定 `CRON_SECRET`，見第十節）。
+
 ## 10. 環境變數
 
 - `NEXT_PUBLIC_SUPABASE_URL`
@@ -197,8 +199,7 @@
 - `TELEGRAM_BOT_TOKEN`
 - `TELEGRAM_CHAT_ID`
 - （選用，達標 LINE 推播）`LINE_CHANNEL_ACCESS_TOKEN`、`LINE_USER_ID`
-
-敏感資訊不得提交到版本控制。
+- （選用，Vercel Cron）`CRON_SECRET`：須與 Vercel 專案環境變數一致；排程路徑為 `GET /api/cron/check-prices`。正式環境由平台附上 `Authorization: Bearer <CRON_SECRET>`；本機或手動測試可改用 header `x-cron-secret`。若未設定 `CRON_SECRET`，該 Cron 路由一律回應 401。**注意**：Vercel Hobby 對 Cron 執行頻率有限制，若建置或排程被拒，請依官方文件調降 `vercel.json` 之 `schedule`
 
 ## 11. 驗收條件
 

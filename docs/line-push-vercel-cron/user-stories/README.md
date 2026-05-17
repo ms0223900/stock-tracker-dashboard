@@ -10,7 +10,7 @@
 | --- | --- | --- | --- | --- |
 | **001** | 獨立驗證 LINE Push 與測試 Route | P0 | — | `lib/line`、`POST /api/test-line`、環境變數，不經股價／DB |
 | **002** | 達標時推送 LINE 通知與 check-prices 整合 | P0 | US-001 | 達標文案、與既有檢查 API 共用語意、成功才更新 `is_notified` |
-| **003** | Vercel Cron 與排程端點驗證 | P1 | US-002 | `crons`、`CRON_SECRET`、GET 相容、Production 驗證 |
+| **003** | Vercel Cron 與排程端點驗證 | P1 | US-002 | `vercel.json` → `GET /api/cron/check-prices`、`CRON_SECRET`、`Authorization`／`x-cron-secret` |
 
 ---
 
@@ -46,4 +46,4 @@ US-003（Vercel Cron + secret + GET）
 | **Wave 2** | US-002 | 須待 Wave 1 |
 | **Wave 3** | US-003 | 須待 Wave 2 |
 
-US-002 實作時建議先與產品確認 **Telegram 與 LINE 並行或互斥**（見功能 spec 第九節風險表），避免雙重通知或未預期競態。
+US-002 與 US-003 已依主 [`docs/spec.md`](../../spec.md)：**Telegram 優先**，選用 LINE 時兩者皆成功才標記 `is_notified`；Cron 使用 **`/api/cron/check-prices`**，與前端呼叫之 **`/api/check-prices`** 共用同一檢查實作。
