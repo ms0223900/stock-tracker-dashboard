@@ -1,43 +1,33 @@
 ---
-description: PRODUCTION Supabase—strict schema; RLS documented; validate before write; transactional notification state; migrations versioned.
+description: PROTOTYPE Supabase—schema per spec; validate before write; is_notified only after Telegram OK; service role server-only.
 globs: "**/*.{ts,tsx,sql}"
 alwaysApply: false
 ---
 
-# Supabase（PRODUCTION）
+# Supabase（PROTOTYPE）
 
-## Schema
+## 資料表 `watchlist`
 
-- `watchlist` 欄位與語意以 [`docs/spec.md`](docs/spec.md) §7 為準；變更 schema **先**更新 spec + migration。
+- 欄位與語意以 [`docs/spec.md`](docs/spec.md) §7 為準。
 
-## 金鑰
+## 絕對底線
 
-- Browser：**anon** + **RLS**（政策須可查、可加註解說明目標）。
-- Server 特權：**service_role** **僅** server-side module；禁止 import 進 client。
-- Env 缺失：明確錯誤回應／log metadata（無 secret）。
+- **`symbol`／`target_price`**：寫入前已驗證；否則 **不 insert/update**。
+- **`is_notified`／`notified_at`**：僅在 **Telegram 成功**後更新（見 `telegram.mdc`）。
+- **`SUPABASE_SERVICE_ROLE_KEY`**：**僅 server**；不可進 client／`NEXT_PUBLIC_*`。
 
-## 寫入行為
+## PROTOTYPE 可取捨
 
-- 驗證 `symbol`、`target_price`；拒絕 `NaN`、`0`、負數。
-- 新增：`is_notified = false`（或 DB default）。
-- `last_price`：成功取價後更新；失敗不寫誤導值。
-
-## 通知一致性
-
-- `is_notified`／`notified_at`：**僅 Telegram 成功後**；並發時使用 **conditional update**（`where is_notified = false`）或 transaction。
-
-## SQL／RLS
-
-- 所有 DDL／policy 進 **版本化**目錄（例如 `supabase/migrations/`），PR 註明套用方式。
-- Policy 註解：**anon 可選權限／service_role 批量路徑**。
+- RLS／migration 可先採 **課程最小** 政策，但須在程式或 spec §12 **註明風險**。
+- SQL 變更可先單檔記錄；未完整 `migrations/` 目錄時先 **TODO**。
 
 ## Do / Don't
 
 | Do | Don't |
 | --- | --- |
-| 驗證 → insert | unclean payload 入庫 |
-| 同步 spec + migration | 只改應用不改 DB |
+| 驗證後寫入 | 無效代號／目標價入庫 |
+| service role 只在 server | anon 做特權繞過（未文件化） |
 
 ## 參照
 
-- [`docs/spec.md`](docs/spec.md)、[`telegram.mdc`](telegram.mdc)
+- [`docs/spec.md`](docs/spec.md)、[`AGENTS.md`](AGENTS.md)

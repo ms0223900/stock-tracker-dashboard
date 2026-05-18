@@ -96,16 +96,18 @@
 
 ### `watchlist`
 
-| 欄位 | 型別 | 必填 | 說明 |
-| --- | --- | --- | --- |
-| `id` | UUID | 是 | 每筆追蹤資料的唯一 ID |
-| `symbol` | text | 是 | 股票代號，例如 `2330.TW` |
-| `target_price` | numeric | 是 | 使用者設定的目標股價 |
-| `last_price` | numeric | 否 | 最近一次查到的股價 |
-| `is_notified` | boolean | 是 | 是否已發送達標通知，預設 `false` |
-| `notified_at` | timestamptz | 否 | 通知成功時間 |
-| `created_at` | timestamptz | 是 | 建立時間 |
-| `updated_at` | timestamptz | 否 | 最後更新時間 |
+
+| 欄位             | 型別          | 必填  | 說明                   |
+| -------------- | ----------- | --- | -------------------- |
+| `id`           | UUID        | 是   | 每筆追蹤資料的唯一 ID         |
+| `symbol`       | text        | 是   | 股票代號，例如 `2330.TW`    |
+| `target_price` | numeric     | 是   | 使用者設定的目標股價           |
+| `last_price`   | numeric     | 否   | 最近一次查到的股價            |
+| `is_notified`  | boolean     | 是   | 是否已發送達標通知，預設 `false` |
+| `notified_at`  | timestamptz | 否   | 通知成功時間               |
+| `created_at`   | timestamptz | 是   | 建立時間                 |
+| `updated_at`   | timestamptz | 否   | 最後更新時間               |
+
 
 ## 8. API 與服務設計
 
@@ -119,13 +121,12 @@
 
 #### 最高／最低價（OHLC 區塊 vs. 走勢圖標記）
 
-1. **結果卡下方 OHLC 網格之「最高」「最低」**  
-   數值來自 Yahoo chart API `indicators.quote` 之 `high`、`low` 與 `close` 陣列，經正規化後寫入 `StockPrice.high` / `StockPrice.low`，介面與 spec 一致採 **數字型別**（缺資料時 fallback 可能為 `0`，與 `formatPrice` 顯示一致）。正規化規則（與 `lib/yahoo-finance.ts` 對齊）：
-   - **high**：`quote.high` 陣列中所有有效數值之**最大值**；若無有效值，改取 `quote.close` 有效數值之最大值；若仍無，取 `quote.high` **最後一個**有效值；皆無則為 `0`。
-   - **low**：`quote.low` 陣列中所有有效數值之**最小值**；若無有效值，改取 `quote.close` 有效數值之最小值；若仍無，取 `quote.low` **最後一個**有效值；皆無則為 `0`。
-
-2. **走勢圖（AreaChart）上之最高／最低標記（ReferenceDot／ReferenceLine）**  
-   取本次查詢所建之 **盤中成交價序列** `chartData`：`timestamp` 與 `quote.close` 一一對應、略過 `close` 為 null 的點，在此序列上計算價格之**全域最大與最小**，並標示對應時刻。  
+1. **結果卡下方 OHLC 網格之「最高」「最低」**
+  數值來自 Yahoo chart API `indicators.quote` 之 `high`、`low` 與 `close` 陣列，經正規化後寫入 `StockPrice.high` / `StockPrice.low`，介面與 spec 一致採 **數字型別**（缺資料時 fallback 可能為 `0`，與 `formatPrice` 顯示一致）。正規化規則（與 `lib/yahoo-finance.ts` 對齊）：
+  - **high**：`quote.high` 陣列中所有有效數值之**最大值**；若無有效值，改取 `quote.close` 有效數值之最大值；若仍無，取 `quote.high` **最後一個**有效值；皆無則為 `0`。
+  - **low**：`quote.low` 陣列中所有有效數值之**最小值**；若無有效值，改取 `quote.close` 有效數值之最小值；若仍無，取 `quote.low` **最後一個**有效值；皆無則為 `0`。
+2. **走勢圖（AreaChart）上之最高／最低標記（ReferenceDot／ReferenceLine）**
+  取本次查詢所建之 **盤中成交價序列** `chartData`：`timestamp` 與 `quote.close` 一一對應、略過 `close` 為 null 的點，在此序列上計算價格之**全域最大與最小**，並標示對應時刻。  
    **注意**：此極值僅代表「回傳之 close 採樣點」的高低，**不**等同第 1 點由 `quote.high`／`quote.low` 正規化後之數值；兩者可能因採樣粒度或 Yahoo 欄位定義而略有差異，屬預期行為。
 
 ### Supabase
@@ -217,8 +218,3 @@
 - 前端輪詢啟用後，約每 **60 秒**觸發一次刷新：**股價結果區**（若有顯示查詢結果）與**追蹤清單內每一筆**之價格或更新時間會反映重新取得之資料；清單含多筆時仍須**全部**更新，而非僅更新可視範圍。
 - （選用）若使用 Vercel Cron／`vercel.json`：於 **Hobby** 方案時 Cron **僅能每日一次**，更頻繁之 `schedule` 會在**部署時失敗**（見第十節）。
 
-## 12. 未決問題
-
-- 第一版是否一定要包含 Recharts 折線圖，或列為課程加分項目即可？
-- Supabase Row Level Security 策略是否要配合未來登入預先設計，或先採單使用者 Demo 設定？
-- Telegram Chat ID 是固定給課程 demo 使用，還是要讓使用者自行輸入？
