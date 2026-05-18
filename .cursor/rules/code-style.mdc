@@ -1,43 +1,35 @@
 ---
-description: PRODUCTION cross-cutting TypeScript—explicit domain types, zh-TW validation copy, typed errors, strict any policy.
+description: PROTOTYPE cross-cutting TS style—speed first; non-negotiable validation, secrets, and user-facing zh-TW errors.
 alwaysApply: true
 ---
 
-# Code Style（PRODUCTION）
+# Code Style（PROTOTYPE）
 
-## 型別與模型
+## 本模式態度
 
-- **`StockQuote`、`WatchlistRow`、通知結果** 等须有 **explicit types**；禁止裸 `unknown` 流进 UI／API。
-- **`any`**：**禁止**無理由使用；若邊界收窄前必須使用，**註解原因** + **`TODO` 收斂期限**。
-- 錯誤與狀態字串優先 **`as const` / union**，避免魔法字串。
+- **先跑 spec、再優化**。可接受較扁平、較少的檔案切分。
+- **`any`**：盡量少用；若省下大量時間可先寫並加 **`TODO(prototype): narrow type`**。
 
-## 驗證與繁中訊息
+## 絕對底線（與 [`docs/spec.md`](docs/spec.md)、`AGENTS.md` 一致）
 
-- 驗證緊貼 **表單／Server Action／Route Handler** 邊界；**無效資料不寫 Supabase**。
-- 代號／目標價錯誤文案與 [`docs/spec.md`](docs/spec.md) 一致並盡量 **單一來源常數**。
+- **驗證**：表單／Route Handler／Server Action 邊界驗證 `symbol`、`target_price`；**無效不入庫**。
+- **錯誤文案（繁中）**：代號與目標價錯誤訊息與 spec 一致或共用常數。
+- **外部 I/O**：避免空 `catch`；股價失敗等至少讓 UI 顯示可讀訊息，不要整頁崩潰。
+- **機密**：同 `AGENTS.md`—不得把 service role／Telegram 暴露到 client。
 
-## 外部服務
+## 可妥協項目
 
-- Yahoo、Supabase、Telegram：**typed error** 或 **Result**；**禁止**空 `catch`。
-- UI：可讀繁中；股價失敗用 spec 建議句；單一 API 失敗**不得**拖垮整頁。
-
-## 測試與可維護
-
-- **純函数**（validation、quote normalize、門檻判定）應有 unit tests；新增／修改行為時 **同步**測試。
-- 若專案尚未裝測試框架：變更前先補最小設定或於 PR 註明 **阻擋項目** 並更新 spec。
-
-## MVP 與文件
-
-- 不超出 [`docs/spec.md`](docs/spec.md) §4 MVP；延後項寫入 §12。
-- 行為變更 → **同步更新** spec／`AGENTS.md` `Current State` 段落。
+- 未抽共用 helper、暫不重複程式碼收斂。
+- 不深究每個分支的詳盡錯誤型別命名；但 **critical path**（寫 DB、發通知）仍要有明確成敗分支。
 
 ## Do / Don't
 
 | Do | Don't |
 | --- | --- |
-| boundary parse + domain types | `any` 掩蓋錯誤 |
-| 明確錯誤分支 | `console.log` 吞錯 |
+| 對照 spec 驗證／錯誤字串 | 略過驗證寫入 `watchlist` |
+| 失敗時繁中、可重試 | 靜默失敗 |
+| 機密僅 server | `NEXT_PUBLIC_*` 洩漏 token |
 
 ## 參照
 
-- [`docs/spec.md`](docs/spec.md)、[`AGENTS.md`](AGENTS.md)
+- [`AGENTS.md`](AGENTS.md)、[`docs/spec.md`](docs/spec.md)
