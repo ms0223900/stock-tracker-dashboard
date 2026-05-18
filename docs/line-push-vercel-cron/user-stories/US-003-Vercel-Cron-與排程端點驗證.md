@@ -14,8 +14,23 @@
 - 無有效 secret 時回傳 **401／403**，**不**執行查價與推播
 - Production 部署後 Cron 或手動帶 secret 之請求可成功跑完；失敗時可於 Vercel Logs 追蹤
 
-**驗收條件**：
+**驗收條件（簡化說法）**：
+
+- 有一支 **Cron 專用** Route（例如 **`GET /api/cron/check-prices`**）；**沒帶對的 `CRON_SECRET` 就只做 401，不查價、不推播**。
+- 帶對 secret 時：**讀追蹤清單 → 查目前股價 → 比對是否達標**（與 **`/api/check-prices`** 同一套伺服器邏輯）。
+- **達標時**沿用既有 **Telegram／LINE** 通知規則（見 **US-002**）。
+- **通知判定成功後**，才把 **`is_notified`／`notified_at`** 寫成已通知；失敗則維持未通知。
+- **回傳 JSON 初學者可讀**：至少含摘要 **`message`** 與逐筆說明 **`results`**（每檔一行體感結果；總檢查筆數可對 **`results.length`**；細節見完整驗收與實作 [`lib/run-watchlist-price-check.ts`](../../../lib/run-watchlist-price-check.ts)）。
+- **Vercel Cron**（`vercel.json` 或後台）的 path **指到這支 Route**，且排程須 **GET**；**Hobby** 方案 **每日最多一次 Cron**，過頻會 **deploy 失敗**。
+- **Production** 上環境變數（**`CRON_SECRET`**、**`LINE_*`** 等）設定正確且與本機驗證一致（需實際部署後自行確認）。
+
+**驗收條件（完整）**：
+
 - [x] Repo 內須有對應 **`GET /api/cron/check-prices`** 之 App Router 實作（本 repo 為 [`app/api/cron/check-prices/route.ts`](../../../app/api/cron/check-prices/route.ts)）；進入點需驗證 `CRON_SECRET`（或同等機制）後，查價與達標通知須與 **`/api/check-prices`** 共用同一套伺服器邏輯（本 repo 為 [`lib/run-watchlist-price-check.ts`](../../../lib/run-watchlist-price-check.ts)），禁止另起一套分叉流程。
+- [x] 以有效 secret **手動或 Cron 觸發**時，會讀取 watchlist、查詢股價、依目標價判定達標與否，並依判定呼叫／略過通知（語意與 [`app/api/check-prices/route.ts`](../../../app/api/check-prices/route.ts) 一致）。
+- [x] 達標時沿用 **US-002**：通知管道與「**Telegram 優先、LINE 為選配時須兩者皆成功才標記已通知**」等規則與主 [`docs/spec.md`](../../spec.md) 一致。
+- [x] **`is_notified`／`notified_at`** 僅在通知流程**判定成功**後更新；發送失敗或未達標時不誤標為已通知。
+- [x] 成功時回應 JSON 含可讀 **`message`** 與逐筆 **`results`**（本 repo 為英文明細字串陣列；Cron Route 另含 **`source: "cron"`** 便於辨識）；初學者可從內容看出每檔是否略過、已通知、達標但送失敗等（尚**無**獨立 `checkedCount`／`notifySuccessCount` 欄位時，以 `results` 筆數與內容理解即可）。
 - [x] `crons` 設定之 path 與 repo 內 Route 路徑一致，且該 Route 支援 **GET**（符合 Vercel Cron 預設行為）
 - [x] 缺少或錯誤的 cron secret 無法觸發查價／通知邏輯
 - [ ] 部署至 Vercel Production 後，環境變數（含 `CRON_SECRET`、`LINE_*`）設定正確且行為與本機驗證一致（允許網路／配額造成之時間差）（**請於 Vercel 設定 env 並部署後自行驗證**）
