@@ -1,3 +1,5 @@
+import { buildStockHitNotificationMessage } from "@/lib/stock-hit-notification-message";
+
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
@@ -17,14 +19,12 @@ export async function sendTelegramMessage(
 ): Promise<boolean> {
   const { botToken, chatId } = getConfig();
 
-  const text = [
-    `🚀 *股價達標通知*`,
-    ``,
-    `股票代號：${symbol}`,
-    `目前股價：$${currentPrice.toLocaleString("zh-TW", { minimumFractionDigits: 2 })}`,
-    `目標股價：$${targetPrice.toLocaleString("zh-TW", { minimumFractionDigits: 2 })}`,
-    `觸發時間：${new Date().toLocaleString("zh-TW", { hour12: false })}`,
-  ].join("\n");
+  const text = buildStockHitNotificationMessage(
+    symbol,
+    currentPrice,
+    targetPrice,
+    { format: "telegramMarkdown" },
+  );
 
   try {
     const res = await fetch(

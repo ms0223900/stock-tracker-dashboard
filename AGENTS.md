@@ -70,6 +70,55 @@
 
 ## Environment & Secrets
 
+見 [`docs/spec.md`](docs/spec.md) §10。
+
+## Do / Don't
+
+| Do | Don't |
+| --- | --- |
+| 遵循 spec 驗證與繁中錯誤 | 自動補 `.TW`、略過輸入驗證寫 DB |
+| Server 保管機密 | client 暴露 service role／Telegram |
+| Telegram **成功後**更新 `is_notified` | 發送成功前提早標記 |
+| 明確型別與模組邊界 | 大圈 `any`、跨層級耦合 |
+
+## Current State｜目前狀態
+
+- 即時股價更新已定案為 **前端輪詢**：**固定 60 秒**間隔，每一輪刷新**股價結果區**（若有）與**追蹤清單內每一筆**（見 [`docs/spec.md`](docs/spec.md) §4「前端輪詢（定案）」）。
+- `/api/check-prices` 達標通知：預設 **Telegram**；若另設定 `LINE_CHANNEL_ACCESS_TOKEN` 與 `LINE_USER_ID`，於 Telegram 成功後再送 **LINE Push**，**兩者皆成功**才將 `is_notified` 設為 `true`（見 [`docs/spec.md`](docs/spec.md) 第八節 LINE、第九節）。
+- **Vercel Cron**（選用）：`vercel.json` 設定對 `GET /api/cron/check-prices` 定時觸發；須設定 `CRON_SECRET`，與請求 `Authorization: Bearer` 一致（見 [`docs/spec.md`](docs/spec.md) 第十節）。**Vercel Hobby** 僅允許 Cron **每日一次**；更頻繁的 `schedule` 會在**部署時失敗**（見第十節原文摘要）。前端輪詢仍呼叫無密鑰之 `/api/check-prices`。
+- 其餘以 repo 與 [`docs/spec.md`](docs/spec.md) 為準；規則切換見 [`scripts/switch-ai-mode.mjs`](scripts/switch-ai-mode.mjs)。
+
+<!-- gitnexus:start -->
+# GitNexus — Code Intelligence
+
+This project is indexed by GitNexus as **stock-tracker-dashboard** (594 symbols, 755 relationships, 16 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+
+> If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
+
+## Always Do
+
+- **MUST run impact analysis before editing any symbol.** Before modifying a function, class, or method, run `gitnexus_impact({target: "symbolName", direction: "upstream"})` and report the blast radius (direct callers, affected processes, risk level) to the user.
+- **MUST run `gitnexus_detect_changes()` before committing** to verify your changes only affect expected symbols and execution flows.
+- **MUST warn the user** if impact analysis returns HIGH or CRITICAL risk before proceeding with edits.
+- When exploring unfamiliar code, use `gitnexus_query({query: "concept"})` to find execution flows instead of grepping. It returns process-grouped results ranked by relevance.
+- When you need full context on a specific symbol — callers, callees, which execution flows it participates in — use `gitnexus_context({name: "symbolName"})`.
+
+## Never Do
+
+- NEVER edit a function, class, or method without first running `gitnexus_impact` on it.
+- NEVER ignore HIGH or CRITICAL risk warnings from impact analysis.
+- NEVER rename symbols with find-and-replace — use `gitnexus_rename` which understands the call graph.
+- NEVER commit changes without running `gitnexus_detect_changes()` to check affected scope.
+
+## Resources
+
+| Resource | Use for |
+|----------|---------|
+| `gitnexus://repo/stock-tracker-dashboard/context` | Codebase overview, check index freshness |
+| `gitnexus://repo/stock-tracker-dashboard/clusters` | All functional areas |
+| `gitnexus://repo/stock-tracker-dashboard/processes` | All execution flows |
+| `gitnexus://repo/stock-tracker-dashboard/process/{name}` | Step-by-step execution trace |
+=======
 見 `[docs/spec.md](docs/spec.md)` §10；值不入庫。
 
 ## Current State｜現況

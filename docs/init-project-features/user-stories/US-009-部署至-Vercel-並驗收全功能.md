@@ -57,7 +57,7 @@
 
 狀態：🔍 需人工確認
 
-- `app/api/check-prices/route.ts`、`lib/telegram.ts` 實作通知流程；Cron 需在 Vercel 設定（文件中範例 `vercel.json`，Repo 根目錄目前無該檔）。
+- `app/api/check-prices/route.ts`、`lib/telegram.ts` 實作通知流程；選用之 Cron 為 **`GET /api/cron/check-prices`**（見 repo 根目錄 `vercel.json`）並須設定 **`CRON_SECRET`。** **Vercel Hobby**：Cron 限每日一次，過頻 `schedule` 會導致**部署失敗**（見主 `docs/spec.md` 第十節英文說明）。
 
 ---
 
@@ -80,7 +80,7 @@
 **後續建議**
 
 - 於 Vercel 完成部署後將本 US 勾選並補連結或截註備查。
-- 考慮提交範例 `vercel.json`（Cron）以降低學員遺漏排程設定。
+- Repo 已含範例 `vercel.json`（Cron）；部署前請確認方案為 Hobby 時 **`schedule` 不得高於每日一次**，否則部署會被 Vercel 拒絕。
 
 **依賴關係**：US-001 至 US-008（所有功能完成）
 **優先級**：P0

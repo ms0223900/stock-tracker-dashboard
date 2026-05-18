@@ -137,17 +137,12 @@ node scripts/test-telegram.mjs
 
 ### 6.（選擇性）設定 Vercel Cron 自動排程
 
-建立 `vercel.json`：
+專案若已含 repo 根目錄 [`vercel.json`](../../../vercel.json)，其中 Cron path 為 **`/api/cron/check-prices`**（`GET`，須搭配 **`CRON_SECRET`**，見主 [`docs/spec.md`](../../spec.md) 第十節）。與前端輪詢呼叫之 **`/api/check-prices`** 不同：後者無密鑰，前者供排程專用。
 
-```json
-{
-  "crons": [
-    {
-      "path": "/api/check-prices",
-      "schedule": "*/5 * * * *"
-    }
-  ]
-}
-```
+**Vercel Hobby（部署必讀）**：官方規定 Hobby 帳號的 Cron **僅能每天執行一次**；若 `schedule` 表達式會比「每日一次」更頻繁，**部署階段即會失敗**：
 
-並在 Vercel Dashboard 設定 `TELEGRAM_BOT_TOKEN`、`TELEGRAM_CHAT_ID`、`NEXT_PUBLIC_SUPABASE_URL`、`SUPABASE_SERVICE_ROLE_KEY` 環境變數。
+> Hobby accounts are limited to cron jobs that run once per day. Cron expressions that would run more frequently will fail during deployment.
+
+本 repo 預設為每日一次（例如 `0 1 * * *`，UTC）。請勿改成 `*/5 * * * *` 這類表達式後直接在 Hobby 上部署。
+
+並在 Vercel Dashboard 設定 `TELEGRAM_BOT_TOKEN`、`TELEGRAM_CHAT_ID`、`NEXT_PUBLIC_SUPABASE_URL`、`SUPABASE_SERVICE_ROLE_KEY`；使用 Cron 時另設 **`CRON_SECRET`**。
