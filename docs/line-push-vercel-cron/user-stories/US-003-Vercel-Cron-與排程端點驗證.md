@@ -15,6 +15,7 @@
 - Production 部署後 Cron 或手動帶 secret 之請求可成功跑完；失敗時可於 Vercel Logs 追蹤
 
 **驗收條件**：
+- [x] Repo 內須有對應 **`GET /api/cron/check-prices`** 之 App Router 實作（本 repo 為 [`app/api/cron/check-prices/route.ts`](../../../app/api/cron/check-prices/route.ts)）；進入點需驗證 `CRON_SECRET`（或同等機制）後，查價與達標通知須與 **`/api/check-prices`** 共用同一套伺服器邏輯（本 repo 為 [`lib/run-watchlist-price-check.ts`](../../../lib/run-watchlist-price-check.ts)），禁止另起一套分叉流程。
 - [x] `crons` 設定之 path 與 repo 內 Route 路徑一致，且該 Route 支援 **GET**（符合 Vercel Cron 預設行為）
 - [x] 缺少或錯誤的 cron secret 無法觸發查價／通知邏輯
 - [ ] 部署至 Vercel Production 後，環境變數（含 `CRON_SECRET`、`LINE_*`）設定正確且行為與本機驗證一致（允許網路／配額造成之時間差）（**請於 Vercel 設定 env 並部署後自行驗證**）
