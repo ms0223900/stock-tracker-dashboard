@@ -83,7 +83,7 @@ export function StockResultCard({
                 className="material-symbols-outlined text-[20px]"
                 aria-hidden="true"
               >
-                bell_ring
+                notifications
               </span>
               {isSaving ? "儲存中" : "儲存目標股價"}
             </button>
