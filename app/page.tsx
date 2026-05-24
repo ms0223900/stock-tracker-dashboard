@@ -1,17 +1,25 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 
 import { ErrorBanner } from "@/components/ErrorBanner";
 import { QueryAndTrackCard } from "@/components/QueryAndTrackCard";
 import { StockResultCard } from "@/components/StockResultCard";
 import { SuccessBanner } from "@/components/SuccessBanner";
+import { WatchlistSection } from "@/components/WatchlistSection";
 import { useSaveWatchlist } from "@/hooks/useSaveWatchlist";
 import { useStockQuery } from "@/hooks/useStockQuery";
+import { useWatchlist } from "@/hooks/useWatchlist";
+import { useWatchlistPolling } from "@/hooks/useWatchlistPolling";
 
 export default function Home() {
-  const { errorMessage: queryErrorMessage, stock, queryStock, isLoading } =
-    useStockQuery();
+  const {
+    errorMessage: queryErrorMessage,
+    stock,
+    queryStock,
+    refreshCurrentStock,
+    isLoading,
+  } = useStockQuery();
   const {
     saveWatchlist,
     isSaving,
@@ -19,6 +27,13 @@ export default function Home() {
     successMessage,
     clearMessages,
   } = useSaveWatchlist();
+  const {
+    items: watchlistItems,
+    isLoading: isWatchlistLoading,
+    errorMessage: watchlistErrorMessage,
+    fetchWatchlist,
+    refreshPrices,
+  } = useWatchlist();
 
   const handleQuery = useCallback(
     (symbol: string) => {
@@ -39,6 +54,29 @@ export default function Home() {
     [saveWatchlist, stock],
   );
 
+  const handlePollingTick = useCallback(async () => {
+    await refreshPrices();
+
+    if (stock) {
+      await refreshCurrentStock();
+    }
+  }, [refreshCurrentStock, refreshPrices, stock]);
+
+  useWatchlistPolling({ onTick: handlePollingTick });
+
+  useEffect(() => {
+    if (!successMessage) {
+      return;
+    }
+
+    void (async () => {
+      const loaded = await fetchWatchlist();
+      if (loaded) {
+        await refreshPrices();
+      }
+    })();
+  }, [fetchWatchlist, refreshPrices, successMessage]);
+
   const bannerErrorMessage = saveErrorMessage ?? queryErrorMessage;
 
   return (
@@ -50,7 +88,7 @@ export default function Home() {
         </p>
       </header>
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-8">
         {successMessage ? <SuccessBanner message={successMessage} /> : null}
         {bannerErrorMessage ? (
           <ErrorBanner message={bannerErrorMessage} />
@@ -66,6 +104,12 @@ export default function Home() {
             onSave={handleSave}
           />
         ) : null}
+
+        <WatchlistSection
+          items={watchlistItems}
+          isLoading={isWatchlistLoading}
+          errorMessage={watchlistErrorMessage}
+        />
       </div>
     </main>
   );

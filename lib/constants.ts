@@ -8,3 +8,10 @@ export const STOCK_FETCH_ERROR = "目前無法取得股價資料，請稍後再�
 export const WATCHLIST_SAVE_SUCCESS = "已加入追蹤清單";
 
 export const WATCHLIST_SAVE_ERROR = "無法儲存追蹤項目，請稍後再試";
+
+export const WATCHLIST_FETCH_ERROR = "無法載入追蹤清單，請稍後再試";
+
+export const WATCHLIST_EMPTY_MESSAGE = "尚未加入任何追蹤項目";
+
+/** spec §4：前端輪詢固定 60 秒 */
+export const POLL_INTERVAL_MS = 60_000;

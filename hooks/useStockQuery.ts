@@ -52,11 +52,38 @@ export function useStockQuery() {
     }
   }, []);
 
+  const refreshCurrentStock = useCallback(async () => {
+    if (!stock) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `/api/yahoo-finance?symbol=${encodeURIComponent(stock.symbol)}`,
+      );
+      const payload = (await response.json()) as {
+        data?: Parameters<typeof deserializeStockPrice>[0];
+        error?: string;
+      };
+
+      if (!response.ok || !payload.data) {
+        setErrorMessage(payload.error ?? STOCK_FETCH_ERROR);
+        return;
+      }
+
+      setStock(deserializeStockPrice(payload.data));
+      setErrorMessage(null);
+    } catch {
+      setErrorMessage(STOCK_FETCH_ERROR);
+    }
+  }, [stock]);
+
   return {
     queryState,
     errorMessage,
     stock,
     queryStock,
+    refreshCurrentStock,
     isLoading: queryState === "loading",
   };
 }

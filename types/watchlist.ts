@@ -8,3 +8,8 @@ export type WatchlistItem = {
   created_at: string;
   updated_at: string | null;
 };
+
+/** 輪詢刷新後供 UI 使用的清單列（含單筆查價失敗標記） */
+export type WatchlistItemDisplay = WatchlistItem & {
+  priceFetchFailed?: boolean;
+};

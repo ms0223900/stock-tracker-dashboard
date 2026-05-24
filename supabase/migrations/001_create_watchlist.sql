@@ -27,3 +27,10 @@ CREATE POLICY "anon_select_watchlist"
   FOR SELECT
   TO anon
   USING (true);
+
+CREATE POLICY "anon_update_watchlist"
+  ON watchlist
+  FOR UPDATE
+  TO anon
+  USING (true)
+  WITH CHECK (true);

@@ -10,6 +10,8 @@
   --color-card-muted: #f7f9fc;
   --color-border: #d7e3f0;
   --color-error: #dc2626;
+  --color-success: #15803d;
+  --color-success-foreground: #ffffff;
 }
 
 body {
