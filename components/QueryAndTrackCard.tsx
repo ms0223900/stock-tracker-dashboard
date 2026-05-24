@@ -49,6 +49,10 @@ export function QueryAndTrackCard({ isLoading, onQuery }: QueryAndTrackCardProps
           {isLoading ? "查詢中" : "查詢股價"}
         </button>
       </form>
+
+      <p className="mt-4 text-sm text-on-background-muted">
+        格式須為英數字；目標價須大於 0。達標後會發送通知。
+      </p>
     </section>
   );
 }
