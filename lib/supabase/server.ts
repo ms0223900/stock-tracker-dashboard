@@ -1,7 +1,11 @@
+import { createClient } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-import { assertSupabaseEnv } from "@/lib/supabase/env";
+import {
+  assertSupabaseEnv,
+  assertSupabaseServiceRoleEnv,
+} from "@/lib/supabase/env";
 
 export async function createServerSupabaseClient() {
   const { url, key } = assertSupabaseEnv();
@@ -23,4 +27,9 @@ export async function createServerSupabaseClient() {
       },
     },
   });
+}
+
+export function createServiceRoleSupabaseClient() {
+  const { url, key } = assertSupabaseServiceRoleEnv();
+  return createClient(url, key);
 }

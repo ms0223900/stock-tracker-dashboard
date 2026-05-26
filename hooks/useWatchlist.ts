@@ -12,6 +12,9 @@ export function useWatchlist() {
   const [items, setItems] = useState<WatchlistItemDisplay[]>([]);
   const [loadState, setLoadState] = useState<LoadState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [notificationErrorMessage, setNotificationErrorMessage] = useState<
+    string | null
+  >(null);
 
   const fetchWatchlist = useCallback(async () => {
     setLoadState("loading");
@@ -44,20 +47,24 @@ export function useWatchlist() {
       const payload = (await response.json()) as {
         items?: WatchlistItemDisplay[];
         error?: string;
+        notificationError?: string | null;
       };
 
       if (!response.ok || !payload.items) {
         setLoadState("error");
         setErrorMessage(payload.error ?? WATCHLIST_FETCH_ERROR);
+        setNotificationErrorMessage(null);
         return;
       }
 
       setItems(payload.items);
       setLoadState("success");
       setErrorMessage(null);
+      setNotificationErrorMessage(payload.notificationError ?? null);
     } catch {
       setLoadState("error");
       setErrorMessage(WATCHLIST_FETCH_ERROR);
+      setNotificationErrorMessage(null);
     }
   }, []);
 
@@ -74,6 +81,7 @@ export function useWatchlist() {
     items,
     loadState,
     errorMessage,
+    notificationErrorMessage,
     fetchWatchlist,
     refreshPrices,
     isLoading: loadState === "loading",

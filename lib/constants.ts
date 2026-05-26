@@ -11,6 +11,9 @@ export const WATCHLIST_SAVE_ERROR = "無法儲存追蹤項目，請稍後再試"
 
 export const WATCHLIST_FETCH_ERROR = "無法載入追蹤清單，請稍後再試";
 
+export const NOTIFICATION_SEND_ERROR =
+  "達標通知發送失敗，請稍後再試或檢查設定";
+
 export const WATCHLIST_EMPTY_MESSAGE = "尚未加入任何追蹤項目";
 
 /** spec §4：前端輪詢固定 60 秒 */

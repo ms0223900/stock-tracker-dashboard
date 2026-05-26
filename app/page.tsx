@@ -31,6 +31,7 @@ export default function Home() {
     items: watchlistItems,
     isLoading: isWatchlistLoading,
     errorMessage: watchlistErrorMessage,
+    notificationErrorMessage,
     fetchWatchlist,
     refreshPrices,
   } = useWatchlist();
@@ -77,7 +78,8 @@ export default function Home() {
     })();
   }, [fetchWatchlist, refreshPrices, successMessage]);
 
-  const bannerErrorMessage = saveErrorMessage ?? queryErrorMessage;
+  const bannerErrorMessage =
+    saveErrorMessage ?? queryErrorMessage ?? notificationErrorMessage;
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-[1280px] px-6 py-10 sm:px-10">
