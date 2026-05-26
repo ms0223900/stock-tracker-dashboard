@@ -35,7 +35,16 @@ export function useWatchlist() {
         return false;
       }
 
-      setItems(result.items);
+      setItems((currentItems) => {
+        const chartDataById = new Map(
+          currentItems.map((item) => [item.id, item.chartData]),
+        );
+
+        return result.items.map((item) => ({
+          ...item,
+          chartData: chartDataById.get(item.id),
+        }));
+      });
       setLoadState("success");
       return true;
     } catch {
@@ -62,7 +71,19 @@ export function useWatchlist() {
         return;
       }
 
-      setItems(payload.items);
+      setItems((currentItems) => {
+        const chartDataById = new Map(
+          currentItems.map((item) => [item.id, item.chartData]),
+        );
+
+        return payload.items!.map((item) => ({
+          ...item,
+          chartData:
+            item.chartData && item.chartData.length > 0
+              ? item.chartData
+              : chartDataById.get(item.id),
+        }));
+      });
       setLoadState("success");
       setErrorMessage(null);
       setNotificationErrorMessage(payload.notificationError ?? null);

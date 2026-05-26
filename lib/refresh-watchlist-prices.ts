@@ -57,6 +57,7 @@ async function tryNotifyTargetReached(
       ...item,
       is_notified: true,
       notified_at: notifiedAt,
+      chartData: item.chartData,
     },
     notificationFailed: false,
   };

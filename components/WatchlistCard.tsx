@@ -33,7 +33,12 @@ export function WatchlistCard({ item, onDelete, isDeleting = false }: WatchlistC
       </div>
 
       {showSparkline && item.chartData ? (
-        <SparklineChart chartData={item.chartData} />
+        <SparklineChart chartData={item.chartData} symbol={item.symbol} />
+      ) : !item.priceFetchFailed ? (
+        <div
+          className="h-14 animate-pulse rounded-[10px] bg-card-muted"
+          aria-hidden="true"
+        />
       ) : null}
 
       <div className="flex items-end justify-between gap-4">
