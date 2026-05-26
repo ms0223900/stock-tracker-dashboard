@@ -2,6 +2,7 @@
 
 import { FormEvent, useState } from "react";
 
+import { StockChart } from "@/components/StockChart";
 import {
   formatPrice,
   formatUpdateTime,
@@ -90,6 +91,8 @@ export function StockResultCard({
           </form>
         </div>
       </div>
+
+      <StockChart chartData={stock.chartData} updateTime={stock.updateTime} />
 
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {OHLC_ITEMS.map((item) => (

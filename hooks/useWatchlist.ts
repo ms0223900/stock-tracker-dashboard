@@ -3,7 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { getWatchlistItems } from "@/app/actions/watchlist";
-import { WATCHLIST_FETCH_ERROR } from "@/lib/constants";
+import {
+  WATCHLIST_DELETE_CONFIRM,
+  WATCHLIST_DELETE_ERROR,
+  WATCHLIST_FETCH_ERROR,
+} from "@/lib/constants";
 import type { WatchlistItemDisplay } from "@/types/watchlist";
 
 type LoadState = "idle" | "loading" | "success" | "error";
@@ -15,6 +19,7 @@ export function useWatchlist() {
   const [notificationErrorMessage, setNotificationErrorMessage] = useState<
     string | null
   >(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const fetchWatchlist = useCallback(async () => {
     setLoadState("loading");
@@ -68,6 +73,35 @@ export function useWatchlist() {
     }
   }, []);
 
+  const deleteItem = useCallback(async (id: string) => {
+    if (!window.confirm(WATCHLIST_DELETE_CONFIRM)) {
+      return;
+    }
+
+    setDeletingId(id);
+    setErrorMessage(null);
+
+    try {
+      const response = await fetch("/api/delete-watchlist", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const payload = (await response.json()) as { error?: string };
+
+      if (!response.ok) {
+        setErrorMessage(payload.error ?? WATCHLIST_DELETE_ERROR);
+        return;
+      }
+
+      setItems((currentItems) => currentItems.filter((item) => item.id !== id));
+    } catch {
+      setErrorMessage(WATCHLIST_DELETE_ERROR);
+    } finally {
+      setDeletingId(null);
+    }
+  }, []);
+
   useEffect(() => {
     void (async () => {
       const loaded = await fetchWatchlist();
@@ -84,6 +118,8 @@ export function useWatchlist() {
     notificationErrorMessage,
     fetchWatchlist,
     refreshPrices,
+    deleteItem,
+    deletingId,
     isLoading: loadState === "loading",
   };
 }

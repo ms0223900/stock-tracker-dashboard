@@ -16,5 +16,9 @@ export const NOTIFICATION_SEND_ERROR =
 
 export const WATCHLIST_EMPTY_MESSAGE = "尚未加入任何追蹤項目";
 
+export const WATCHLIST_DELETE_ERROR = "無法刪除追蹤項目，請稍後再試";
+
+export const WATCHLIST_DELETE_CONFIRM = "確定要刪除此追蹤項目？";
+
 /** spec §4：前端輪詢固定 60 秒 */
 export const POLL_INTERVAL_MS = 60_000;

@@ -34,6 +34,8 @@ export default function Home() {
     notificationErrorMessage,
     fetchWatchlist,
     refreshPrices,
+    deleteItem,
+    deletingId,
   } = useWatchlist();
 
   const handleQuery = useCallback(
@@ -111,6 +113,8 @@ export default function Home() {
           items={watchlistItems}
           isLoading={isWatchlistLoading}
           errorMessage={watchlistErrorMessage}
+          onDelete={deleteItem}
+          deletingId={deletingId}
         />
       </div>
     </main>

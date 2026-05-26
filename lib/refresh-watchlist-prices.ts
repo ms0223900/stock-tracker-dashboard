@@ -102,6 +102,7 @@ export async function refreshWatchlistPrices(
         last_price: stock.price,
         updated_at: updatedAt,
         priceFetchFailed: false,
+        chartData: stock.chartData,
       } satisfies WatchlistItemDisplay;
 
       const notifyResult = await tryNotifyTargetReached(

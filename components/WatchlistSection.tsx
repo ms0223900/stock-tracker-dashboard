@@ -7,6 +7,8 @@ type WatchlistSectionProps = {
   items: WatchlistItemDisplay[];
   isLoading: boolean;
   errorMessage: string | null;
+  onDelete: (id: string) => void;
+  deletingId?: string | null;
 };
 
 function WatchlistSkeleton() {
@@ -15,7 +17,7 @@ function WatchlistSkeleton() {
       {Array.from({ length: 2 }).map((_, index) => (
         <div
           key={index}
-          className="h-[168px] animate-pulse rounded-2xl border border-border bg-card-muted"
+          className="h-[220px] animate-pulse rounded-2xl border border-border bg-card-muted"
         />
       ))}
     </>
@@ -26,6 +28,8 @@ export function WatchlistSection({
   items,
   isLoading,
   errorMessage,
+  onDelete,
+  deletingId = null,
 }: WatchlistSectionProps) {
   const showEmpty = !isLoading && !errorMessage && items.length === 0;
   const showGrid = !isLoading && !errorMessage && items.length > 0;
@@ -49,7 +53,14 @@ export function WatchlistSection({
         ) : null}
 
         {showGrid
-          ? items.map((item) => <WatchlistCard key={item.id} item={item} />)
+          ? items.map((item) => (
+              <WatchlistCard
+                key={item.id}
+                item={item}
+                onDelete={onDelete}
+                isDeleting={deletingId === item.id}
+              />
+            ))
           : null}
       </div>
     </section>
