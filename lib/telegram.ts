@@ -1,10 +1,3 @@
-export type TargetPriceAlertPayload = {
-  symbol: string;
-  currentPrice: number;
-  targetPrice: number;
-  triggeredAt: Date;
-};
-
 export type SendTelegramResult =
   | { ok: true }
   | { ok: false; reason: string };
@@ -20,31 +13,8 @@ function getTelegramEnv(): { token: string; chatId: string } | null {
   return { token, chatId };
 }
 
-function formatTriggeredAt(date: Date): string {
-  const pad = (value: number) => String(value).padStart(2, "0");
-
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
-function formatAlertPrice(value: number): string {
-  return value.toLocaleString("zh-TW", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  });
-}
-
-function buildAlertMessage(payload: TargetPriceAlertPayload): string {
-  return [
-    "股價達標提醒",
-    `股票：${payload.symbol}`,
-    `目前股價：${formatAlertPrice(payload.currentPrice)}`,
-    `目標股價：${formatAlertPrice(payload.targetPrice)}`,
-    `時間：${formatTriggeredAt(payload.triggeredAt)}`,
-  ].join("\n");
-}
-
-export async function sendTargetPriceAlert(
-  payload: TargetPriceAlertPayload,
+export async function sendTelegramText(
+  text: string,
 ): Promise<SendTelegramResult> {
   const env = getTelegramEnv();
 
@@ -61,7 +31,7 @@ export async function sendTargetPriceAlert(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: env.chatId,
-        text: buildAlertMessage(payload),
+        text,
       }),
     });
 

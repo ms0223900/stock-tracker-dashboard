@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { NOTIFICATION_SEND_ERROR } from "@/lib/constants";
-import { sendTargetPriceAlert } from "@/lib/telegram";
+import { sendTargetPriceNotifications } from "@/lib/stock-notification";
 import { fetchStockPrice } from "@/lib/yahoo-finance";
 import { normalizeWatchlistRow } from "@/lib/watchlist-db";
 import type { WatchlistItemDisplay } from "@/types/watchlist";
@@ -21,7 +21,7 @@ async function tryNotifyTargetReached(
   }
 
   const triggeredAt = new Date();
-  const sendResult = await sendTargetPriceAlert({
+  const sendResult = await sendTargetPriceNotifications({
     symbol: item.symbol,
     currentPrice,
     targetPrice: item.target_price,
