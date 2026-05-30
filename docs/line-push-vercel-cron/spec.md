@@ -60,7 +60,7 @@
 | 設定方式 | 於 Vercel 專案設定 Cron（例如 `vercel.json` 的 `crons` 陣列，或平台後台對應設定），`path` 指向實際存在的 Route（見下節「與現有程式對齊」）。 |
 | 排程 | 由產品決定（Notion 範例為每 5 分鐘 `*/5 * * * *`）；須註明 **quota／方案限制** 以官方文件為準。 |
 | 安全 | Cron 觸發之請求須可驗證身分，例如自訂 header（Notion 範例：`x-cron-secret` 比對 `CRON_SECRET`）或 Vercel 建議之 `Authorization: Bearer` 模式；**嚴禁**無驗證的公開查價 + 推播 endpoint。 |
-| HTTP 方法 | Vercel Cron 預設以 **GET** 呼叫 path；若實作僅接受 POST，須改為 **GET 與 POST 共用同一 handler** 或僅暴露 GET 給 Cron（與 Notion「第 7 步」提醒一致）。 |
+| HTTP 方法 | Vercel Cron 預設以 **GET** 呼叫 path；現況 `/api/check-prices` **僅 POST**，須改為 **GET 與 POST 共用同一 handler**（皆呼叫 `refreshWatchlistPrices`）。**GET**（Cron）須驗證 `CRON_SECRET`；**POST**（前端輪詢）維持現有行為。 |
 
 ### 3.3 先不做（本文件刻意延後）
 
@@ -74,8 +74,9 @@
 
 | 現況 | 本功能期望 |
 | --- | --- |
-| 已有 [`app/api/check-prices/route.ts`](../../app/api/check-prices/route.ts)（GET）以 Supabase + Yahoo + **Telegram** 檢查達標 | **擴充**為在同一輪迴圈中於達標時額外呼叫 LINE（或抽出共用「檢查」函式，由 Telegram／LINE 模組分別送出）；**或**新增獨立 Route 專責 LINE，但仍須共用「達標判定與 DB 更新」邏輯，避免不一致。 |
-| 前端輪詢會呼叫 `/api/check-prices`（見 [`hooks/useWatchlistPolling.ts`](../../hooks/useWatchlistPolling.ts)） | 須定義：**達標時是否同時發 Telegram + LINE**，或依環境變數僅啟用其一，避免未預期的雙重通知或與 Cron 競態；建議於實作 PR 中明示決策並寫入環境變數說明。 |
+| [`app/api/check-prices/route.ts`](../../app/api/check-prices/route.ts) 僅 export **POST**，內部呼叫 [`lib/refresh-watchlist-prices.ts`](../../lib/refresh-watchlist-prices.ts) 的 `refreshWatchlistPrices()` | 在 **`tryNotifyTargetReached()`**（或自 `refreshWatchlistPrices` 抽出的共用模組）整合 LINE；Route 維持薄包裝，**勿**在 Route 與 lib 各寫一套達標邏輯。 |
+| 達標判定與 Telegram：`tryNotifyTargetReached()` 以本次 [`fetchStockPrice()`](../../lib/yahoo-finance.ts) 結果比對 `target_price`（`currentPrice >= target_price` 且 `is_notified === false`），Telegram 成功後以 `.eq("is_notified", false)` 更新 DB | 同一函式（或共用通知 orchestrator）依 **第九節「Telegram 與 LINE 並存策略」** 協調兩管道，並維持「成功才標記 `is_notified`」。 |
+| 前端每 60 秒輪詢：[`hooks/useWatchlistPolling.ts`](../../hooks/useWatchlistPolling.ts) → [`app/page.tsx`](../../app/page.tsx) `handlePollingTick` → [`hooks/useWatchlist.ts`](../../hooks/useWatchlist.ts) `refreshPrices()` → **POST** `/api/check-prices` | US-003 的 Cron 須呼叫**同一套** `refreshWatchlistPrices` 邏輯；Route 須補 **GET** handler（Vercel Cron 預設）與 `CRON_SECRET` 驗證，與前端 POST 共用 handler。 |
 | `lib/telegram.ts` 為既有通知出口 | 新增 `lib/line.ts`（或同等命名）僅負責 HTTP 與 LINE 錯誤解析；達標文案可集中在 `lib/stock-notification.ts` 或與 Telegram 訊息建構共用常數，維持繁中與單一來源。 |
 
 ---
@@ -88,7 +89,7 @@
 | `LINE_USER_ID` | Demo 收訊者 userId（僅 server）。 |
 | `CRON_SECRET` | 驗證 Cron 或手動觸發之請求（僅 server）；不得提交版本庫。 |
 
-本機 `.env.local` 與 Vercel 專案環境皆須設定；部署後變更 env 須重新部署始生效。
+本機 `.env.local`、根目錄 [`.env.example`](../../.env.example) 占位與 Vercel 專案環境皆須設定；部署後變更 env 須重新部署始生效。
 
 ---
 
@@ -111,8 +112,8 @@
 
 ### Story B（達標推送）
 
-- [ ] 僅當 `last_price`（或伺服器本次查價結果）**大於或等於** `target_price`，且 `is_notified === false` 時，才呼叫 LINE Push。
-- [ ] LINE API 成功後，`is_notified === true` 且 `notified_at` 有值；失敗時兩者不改為「已通知」狀態。
+- [ ] 僅當伺服器本次 `fetchStockPrice()` 結果 **大於或等於** `target_price`，且 `is_notified === false` 時，才呼叫 LINE Push。
+- [ ] 依第九節並存策略：**所有已啟用管道皆成功**後，`is_notified === true` 且 `notified_at` 有值；任一已啟用管道失敗時兩者不得改為「已通知」。
 - [ ] 同一筆資料在已通知後，再次執行檢查（**含手動觸發與 Cron**）不會重複推播。
 
 ### Story C（Vercel Cron）
@@ -131,10 +132,28 @@
 
 ## 9. 風險與待決問題
 
+### Telegram 與 LINE 並存策略（US-002 定案）
+
+現況僅有 **單一** `is_notified`，且綁在 Telegram 成功路徑上。US-002 須依下列定案實作，避免「Telegram 先成功導致 LINE 永不發送」或「一管道失敗仍被標為已通知」：
+
+**定案（本延伸功能預設）**：
+
+1. 達標時對 **env 齊備的管道** 並行嘗試推送：
+   - Telegram：`TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` 皆存在才發。
+   - LINE：`LINE_CHANNEL_ACCESS_TOKEN` + `LINE_USER_ID` 皆存在才發。
+2. **僅當所有已啟用管道皆發送成功** 後，才更新 `is_notified = true` 與 `notified_at`。
+3. 若僅設定其中一個管道，行為與現有 MVP 相同（單一管道成功即標記）。
+4. 任一已啟用管道失敗 → 維持 `is_notified === false`，下次輪詢或 Cron 可重試。
+
+**非預設、日後可另開需求**：互斥模式（env 強制只發 Telegram 或只發 LINE）、分開欄位追蹤各管道通知狀態。
+
+實作 PR 須載明採用上述定案，並在 README 或 env 說明中註記行為。
+
+### 其他風險
+
 | 項目 | 說明 |
 | --- | --- |
-| Telegram 與 LINE 雙管道 | 須決定達標時是否兩者皆發、或僅其一；若皆發，需在 UX／成本上可接受。 |
-| Cron 與前端輪詢競態 | 兩者可能短時間內先後觸發；依賴 DB `is_notified` 單一鎖定可避免重複推播，但仍可能「一管道成功、另一管道因已標記而跳過」— 須在實作上可接受。 |
+| Cron 與前端輪詢競態 | 兩者可能短時間內先後觸發；`tryNotifyTargetReached` 更新 DB 時已使用 `.eq("is_notified", false)` 樂觀鎖，可避免重複推播；並存策略下若一輪僅部分管道成功，下一輪會重試未完成的管道。 |
 | Vercel Cron 與方案 | 免費／付費方案對 Cron 的支援與限制以 Vercel 官方文件為準。 |
 | LINE userId 取得 | Demo 用 env；正式版若要每位使用者不同收訊者，需另開需求（Webhook、綁定流程）。 |
 
