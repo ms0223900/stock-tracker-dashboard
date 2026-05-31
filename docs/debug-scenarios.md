@@ -10,26 +10,18 @@
 
 ### 症狀
 
-股價都不會更新、通知都沒收到，但頁面安安靜靜——沒有錯誤訊息、沒有崩潰、沒有 loading 狀態。使用者以為一切正常，但後端其實一直在失敗。
+設定了目標價通知，但股價到了卻沒收到任何通知。頁面安安靜靜——沒有錯誤訊息、沒有崩潰。使用者以為通知沒設對，但其實是後端 `/api/check-prices` 一直在失敗，只是錯誤被吞掉了。
 
-### 現行程式碼
+### 初始狀態（空 catch）
 
-`hooks/useWatchlistPolling.ts` 中有**兩處**錯誤被吞掉：
+`hooks/useWatchlistPolling.ts` 中 server-side check 觸發處：
 
-**位置 1** — stockData 輪詢（line 44-51）：
 ```ts
-try {
-  const data = await fetchStockPrice(currentSymbol);
-  setStockData(data);
-} catch {
-  // Silently ignore
-}
-```
-
-**位置 2** — server-side check 觸發（line 114-117，已改為 console 版本）：
-```ts
+// Fire-and-forget: trigger server-side target check & Telegram notification
 fetch("/api/check-prices").catch(() => {});
 ```
+
+不管 `/api/check-prices` 回 401、500、timeout，全部被吃掉。開發者跟使用者一樣，完全不知道背後發生了什麼。
 
 ### Debug 流程
 
@@ -38,48 +30,102 @@ fetch("/api/check-prices").catch(() => {});
 把空 catch 換成 `console.error`，讓錯誤浮出水面：
 
 ```ts
-} catch (err) {
-  console.error("fetchStockPrice failed:", err);
-}
+fetch("/api/check-prices").catch((err) => {
+  console.error("Failed to trigger server-side target check & Telegram notification", err);
+});
 ```
 
-#### Step 2：觀察 browser console
+#### Step 2：觀察 browser console 與 Network tab
 
 1. 打開瀏覽器 DevTools → **Console** tab
 2. 觸發輪詢（等待 POLL_INTERVAL_MS 或手動操作）
 3. 如果看到類似以下的輸出，表示錯誤一直被吞：
 
 ```
-fetchStockPrice failed: Error: Yahoo Finance 回應錯誤 (500)
+Failed to trigger server-side target check & Telegram notification: Error: 500
 ```
 
-4. 切到 **Network** tab，過濾 `yahoo-finance`
+4. 切到 **Network** tab，過濾 `check-prices`
 5. 點進那條 request，看 **Response** body 知道具體失敗原因
 
-#### Step 3：追 root cause
+#### Step 3：再加一層，觀察 response body
 
-常見原因：
+錯誤訊息說明了「有錯誤」，但看不出具體原因。再加一道：
 
-| 現象 | 可能原因 |
-|------|---------|
-| `500` + `cannot read properties of null` | Yahoo API 回傳結構改變 |
-| `429` Too Many Requests | Rate limit 被踩到 |
-| `Failed to fetch` | 網路斷線 / 瀏覽器 CORS 擋掉 |
-| 回應是 HTML 不是 JSON | Yahoo API endpoint 換了 |
+```ts
+const res = await fetch("/api/check-prices").catch((err) => {
+  console.error("Failed to trigger server-side target check & Telegram notification", err);
+}).then((res) => res?.json());
 
-#### Step 4：決定修復策略
+console.log("res", res);
+```
 
-不是所有錯誤都需要彈 alert 給使用者，但至少要讓開發者知道：
+現在 Console 會出現類似輸出：
 
-| 層級 | 作法 | 適用場景 |
+```
+res { ok: false, error: "CRON_SECRET not configured" }
+```
+
+原來是 `CRON_SECRET` 環境變數沒設，API route 驗證失敗回傳了錯誤，但原本的空 catch 把這個訊息整口吞掉。
+
+#### Step 4：區分成功與失敗，各自 log
+
+加上成功/失敗分流，讓每次呼叫的結果一目瞭然：
+
+```ts
+if (res && res.ok) {
+  console.log("Server-side target check & Telegram notification triggered successfully");
+} else {
+  console.error("Failed to trigger server-side target check & Telegram notification: ", res?.error);
+}
+```
+
+### 目前的版本（你在專案中的作法）
+
+以上步驟全部串起來後，專案中目前的程式碼長這樣（`hooks/useWatchlistPolling.ts` line 115）：
+
+```ts
+// Fire-and-forget: trigger server-side target check & Telegram notification
+const res = await fetch("/api/check-prices").catch((err) => {
+  console.error(
+    "Failed to trigger server-side target check & Telegram notification",
+    err,
+  );
+  // TODO: add error handling for production mode
+}).then((res) => res?.json());
+
+console.log("res", res);
+
+if (res && res.ok) {
+  console.log(
+    "Server-side target check & Telegram notification triggered successfully",
+  );
+} else {
+  console.error(
+    "Failed to trigger server-side target check & Telegram notification: ",
+    res?.error,
+  );
+}
+```
+
+雖然不算優雅（沒有封裝、直接用 `console.log` / `console.error` 裸打），但：
+- **直覺易懂** — 任何開發者看一眼就知道它在做什麼
+- **立刻可視** — 打開 Console 就看到成功/失敗全貌
+- **容易複製** — 新手也能照著寫
+
+### 三個層級的演化
+
+| 層級 | 作法 | 何時該用 |
 |------|------|---------|
-| **Level 1** | 空 catch → `console.error(err)` | 課程示範、快速原型 |
-| **Level 2** | 依錯誤類型分流：network error 可重試、4xx 顯示提示 | 正式產品 |
-| **Level 3** | 封裝統一 fetch layer + error boundary + monitoring | 成熟產品 |
+| **Level 0** | `.catch(() => {})` | 沒有這個選項 ❌ |
+| **Level 1** | `console.error` + `console.log` 裸打 | 原型期、課程示範、快速 debug |
+| **Level 2** | 封裝 `fetchWithLog` wrapper，統一處理 error / success | 正式產品 |
+| **Level 3** | 封裝 fetch layer + error boundary + monitoring（Sentry 等） | 成熟產品 |
 
 ### 總結教訓
 
 > **空 catch 是最安靜的壞法。不管你決定怎麼處理錯誤，第一步永遠是：先讓錯誤出聲。**
+> Console 是你的朋友，`console.log` / `console.error` 雖然樸素，但在你還沒建立完整 error handling 架構前，已經能解決 80% 的問題。
 
 ---
 
@@ -278,8 +324,8 @@ d2fe8c3  更新 spec，寫明 OHLC 資料規範（文件對齊）
 
 | | 情境 A：靜默錯誤 | 情境 B：資料形狀錯誤 |
 |--|-----------------|-------------------|
-| **症狀** | 完全不動，沒任何訊息 | 圖表怪怪的但不會 crash |
-| **讓錯誤現形的工具** | `console.error` + Network tab | `console.log` raw API payload |
+| **症狀** | 沒收到通知，但頁面正常 | 圖表怪怪的但不會 crash |
+| **讓錯誤現形的工具** | `console.error` + `console.log` 裸打 | `console.log` raw API payload |
 | **核心 lesson** | 空 catch 是萬惡之源 | 型別定義 ≠ 實際資料形狀 |
-| **修復範圍** | 單點（1 個 catch block） | 跨 6 個 commits、4 個檔案 |
+| **修復範圍** | 單點（1 個 catch → log） | 跨 6 個 commits、4 個檔案 |
 | **課程定位** | 聽不到 → 讓它出聲 | 聽不懂 → 可視化 raw data |
