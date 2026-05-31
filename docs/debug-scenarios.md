@@ -161,6 +161,10 @@ const volume = lastNonNull(quote.volume) ?? 0;
 
 ### Debug 流程
 
+每個步驟都附有「給 AI 的提示詞」——直接把提示詞貼給 Claude 或其他 AI 工具，它就會幫你完成該步驟。
+
+---
+
 #### Step 1：觀察症狀，縮小範圍
 
 「折線圖怪怪的」太模糊。先問三個問題：
@@ -170,6 +174,17 @@ const volume = lastNonNull(quote.volume) ?? 0;
 | Y 軸範圍對嗎？ | 看折線圖的 domain：`[0, maxPrice]` 還是 `[minPrice, maxPrice]`？ |
 | 開盤價是今天的還是昨天的？ | 比對 currentPrice 和 open |
 | 成交量是 total 還是最後一根？ | 看 volume 數字合不合理（幾百萬還是幾百？） |
+
+> **🎯 給 AI 的提示詞：**
+> ```
+> 我的股票查詢頁面中，折線圖顯示的價格範圍怪怪的，低點跑到 0 附近，
+> 而且開盤價看起來不對。
+> 請幫我檢查 lib/yahoo-finance.ts 中 fetchStockPriceRaw 函數，
+> 看看 high / low / open / volume 是怎麼從 Yahoo API 的 response 取的。
+> 我懷疑是 null 值處理有問題。
+> ```
+
+---
 
 #### Step 2：讓錯誤現形 — dump raw API payload
 
@@ -185,6 +200,17 @@ console.log("RAW quote.OHLC:", {
 });
 console.log("COMPUTED:", { high, low, open, volume });
 ```
+
+> **🎯 給 AI 的提示詞：**
+> ```
+> 請在 lib/yahoo-finance.ts 的 fetchStockPriceRaw 函數中，
+> 在 parse 完 Yahoo API response 之後、回傳結果之前，
+> 幫我加入 console.log，印出 quote.open / quote.high / quote.low / quote.close / quote.volume
+> 的原始陣列內容，以及計算後的 high / low / open / volume 數值。
+> 我要在瀏覽器 Console 中比對 raw 資料和計算結果。
+> ```
+
+---
 
 #### Step 3：比對 raw data vs computed
 
@@ -211,6 +237,26 @@ COMPUTED: { high: 150.8, low: 149.8, open: 150.5, volume: 2000 }
 | open | `150.0`（第一根） | `150.5`（倒數第二根） | 應取第一根而非最後一根 |
 | volume | `1000 + 2000 = 3000` | `2000`（最後非 null） | 應加總而非取最後 |
 
+> **🎯 給 AI 的提示詞：**
+> ```
+> 我在瀏覽器 Console 看到以下輸出：
+>
+> RAW:  open=[150.0, null, null, 150.5, null]
+>       high=[151.0, null, null, 150.5, 150.8]
+>       low=[149.8, null, null, 150.1, null]
+>       close=[150.0, null, null, 150.5, 150.3]
+>       volume=[1000, 0, 0, 2000, 0]
+>
+> COMPUTED: high=150.8, low=149.8, open=150.5, volume=2000
+>
+> 看起來 computed 的值不對——high 應該是 151.0（最高）、
+> open 應該是 150.0（第一根）、volume 應該是 3000（加總）。
+> 請幫我分析 lib/yahoo-finance.ts 中 fetchStockPriceRaw 的計算邏輯，
+> 告訴我問題出在哪裡。
+> ```
+
+---
+
 #### Step 4：確認 root cause
 
 一句話總結：
@@ -226,6 +272,21 @@ COMPUTED: { high: 150.8, low: 149.8, open: 150.5, volume: 2000 }
 | `low` | 全日最低價 | **最小值** → `minNonNull` |
 | `volume` | 全日成交量 | **加總** → `sumNonNull` |
 | `close` | 最後成交價 | **最後一根**有效值 → `lastNonNull` ✅ |
+
+> **🎯 給 AI 的提示詞：**
+> ```
+> 我發現 lib/yahoo-finance.ts 中 fetchStockPriceRaw 函數
+> 對 high / low / open / volume 全部使用 lastNonNull 來取值，
+> 但 Yahoo API 回傳的陣列裡面有很多 null。
+>
+> 請幫我確認我的理解是否正確：
+> - high 應該取陣列中的「最大值」而非「最後非 null」
+> - low 應該取「最小值」
+> - open 應該取「第一根有效值」
+> - volume 應該「加總」
+>
+> 如果理解正確，請幫我寫一組新的輔助函數來取代 lastNonNull。
+> ```
 
 ### 解法
 
