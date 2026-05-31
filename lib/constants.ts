@@ -1,5 +1,5 @@
 export const SYMBOL_FORMAT_ERROR =
-  "請輸入完整股票代號，例如 2330.TW";
+  "請輸入有效股票代號，例如 2330.TW、AAPL、7000.HK";
 
 export const TARGET_PRICE_ERROR = "請輸入大於 0 的目標股價";
 

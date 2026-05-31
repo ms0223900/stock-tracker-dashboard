@@ -1,6 +1,7 @@
 import { SYMBOL_FORMAT_ERROR, TARGET_PRICE_ERROR } from "@/lib/constants";
 
-const TW_STOCK_SYMBOL_PATTERN = /^\d+\.TW$/i;
+/** 英數字；可含 `.` 後綴（如 2330.TW、7000.HK） */
+const STOCK_SYMBOL_PATTERN = /^[A-Za-z0-9]+(\.[A-Za-z0-9]+)*$/;
 
 export type SymbolValidationResult =
   | { ok: true; symbol: string }
@@ -13,7 +14,7 @@ export type TargetPriceValidationResult =
 export function validateSymbol(input: string): SymbolValidationResult {
   const trimmed = input.trim();
 
-  if (!trimmed || !TW_STOCK_SYMBOL_PATTERN.test(trimmed)) {
+  if (!trimmed || !STOCK_SYMBOL_PATTERN.test(trimmed)) {
     return { ok: false, message: SYMBOL_FORMAT_ERROR };
   }
 
