@@ -12,7 +12,9 @@
 
 設定了目標價通知，但股價到了卻沒收到任何通知。頁面安安靜靜——沒有錯誤訊息、沒有崩潰。使用者以為通知沒設對，但其實是後端 `/api/check-prices` 一直在失敗，只是錯誤被吞掉了。
 
-### 初始狀態（空 catch）
+### 初始狀態（講師參考，學員不必自行閱讀）
+
+問題出在「追蹤清單定期刷新」時會順便觸發達標檢查，但失敗時錯誤被完全忽略：
 
 `hooks/useWatchlistPolling.ts` 中 server-side check 觸發處：
 
@@ -23,58 +25,118 @@ fetch("/api/check-prices").catch(() => {});
 
 不管 `/api/check-prices` 回 401、500、timeout，全部被吃掉。開發者跟使用者一樣，完全不知道背後發生了什麼。
 
+### Debug 流程摘要
+
+> **一句話定位：** 錯誤被吞掉了 → 想辦法讓它「出聲」。
+
+
+| 步驟         | 在做什麼                                       | 用到的工具                      |
+| ---------- | ------------------------------------------ | -------------------------- |
+| **Step 1** | 描述症狀，請 AI 找出「達標通知」流程哪裡把錯誤藏起來               | 給 AI 的提示詞                  |
+| **Step 2** | 照 AI 建議改完後，用瀏覽器確認請求有沒有失敗                   | DevTools Console + Network |
+| **Step 3** | Console 只看到「有錯」，看不到具體原因 → 請 AI 幫忙印出伺服器回傳內容 | 給 AI 的提示詞                  |
+| **Step 4** | 確認 root cause，請 AI 給出完整修改建議                | 給 AI 的提示詞                  |
+
+
+**Debug 節奏：** 從「完全 silence」→「知道有錯」→「知道錯在哪」→「每次呼叫都看得到成功或失敗」。
+
+---
+
 ### Debug 流程
 
-#### Step 1：讓錯誤現形（暴力法）
+每個步驟都附有「給 AI 的提示詞」——直接把提示詞貼給 Claude 或其他 AI 工具，它就會幫你完成該步驟。（預設你不熟悉程式語法，不必自己改 code。）
 
-把空 catch 換成 `console.error`，讓錯誤浮出水面：
+---
 
-```ts
-fetch("/api/check-prices").catch((err) => {
-  console.error("Failed to trigger server-side target check & Telegram notification", err);
-});
-```
+#### Step 1：描述症狀，請 AI 找出錯誤被藏在哪
 
-#### Step 2：觀察 browser console 與 Network tab
+先確認這不是「通知沒設對」而已：
 
-1. 打開瀏覽器 DevTools → **Console** tab
-2. 觸發輪詢（等待 POLL_INTERVAL_MS 或手動操作）
-3. 切到 **Network** tab，過濾 `check-prices`
-4. 點進那條 request，看 **Response** body 知道具體失敗原因
 
-#### Step 3：再加一層，觀察 response body
+| 問題              | 你觀察到的         |
+| --------------- | ------------- |
+| 追蹤清單有設目標價嗎？     | 有，而且現價已經超過目標價 |
+| 有收到 Telegram 嗎？ | 沒有            |
+| 頁面有跳錯誤嗎？        | 沒有，一切看起來正常    |
 
-錯誤訊息說明了「有錯誤」，但我們在 Console 中看不到，因此看不到具體原因。請 AI 幫我們調整程式碼：「Console 中也能看到錯誤訊息」
 
-```ts
-const res = await fetch("/api/check-prices").catch((err) => {
-  console.error("Failed to trigger server-side target check & Telegram notification", err);
-}).then((res) => res?.json());
+> **🎯 給 AI 的提示詞：**
+>
+> ```
+> 我的股票追蹤看板有設定目標價，股價已經達標了，
+> 但我沒有收到 Telegram 通知，頁面上也沒有任何錯誤提示。
+>
+> 請幫我檢查「定期刷新追蹤清單時，順便檢查是否達標並觸發通知」這段流程，
+> 看看有沒有地方請求失敗了，卻把錯誤藏起來、完全沒有顯示出來。
+> 如果有，請幫我改成失敗時可以在瀏覽器開發者工具的 Console 看到錯誤訊息。
+> ```
 
-console.log("res", res);
-```
+---
 
-現在 Console 會出現類似輸出：
+#### Step 2：用瀏覽器確認請求有沒有失敗
+
+照 Step 1 的 AI 建議改完後，自己動手確認（不懂 DevTools 也可以再問 AI）：
+
+1. 打開瀏覽器 **開發者工具**（Chrome：`F12` 或 `Cmd+Option+I`）
+2. 切到 **Console** 分頁，看有沒有紅色錯誤訊息
+3. 切到 **Network** 分頁，在過濾框輸入 `check-prices`
+4. 等一輪追蹤清單刷新（約 60 秒），或重新整理頁面
+5. 點進那條請求，看 **Response** 分頁的回傳內容
+
+> **🎯 給 AI 的提示詞（選用，不熟悉 DevTools 時）：**
+>
+> ```
+> 我照你的建議改完了，但我不太會用瀏覽器的開發者工具。
+> 請一步一步教我怎么確認「達標檢查／發送通知」這個請求有沒有失敗，
+> 以及在哪裡可以看到伺服器回傳的內容。
+> ```
+
+---
+
+#### Step 3：Console 只看到「有錯」，看不到具體原因
+
+Step 1、2 之後，Console 可能只顯示「請求失敗了」，但看不出**為什麼**失敗。
+常見狀況：伺服器其實有回傳 `{ ok: false, error: "..." }` 的 Response，只是前端沒有把它印出來。
+
+照 AI 建議改完後，Console 可能出現類似：
 
 ```
 res { ok: false, error: "CRON_SECRET not configured" }
 ```
 
-原來是 `CRON_SECRET` 環境變數沒設，API route 驗證失敗回傳了錯誤，但原本的空 catch 把這個訊息整口吞掉。
+這代表後端驗證失敗（例如環境變數沒設好），但原本的空 catch 把這個訊息整口吞掉。
 
-#### Step 4：區分成功與失敗，各自 log
+> **🎯 給 AI 的提示詞：**
+>
+> ```
+> 我在 Console 看到達標檢查好像失敗了，但只看到「有錯誤」，
+> 看不出伺服器具體回傳了什麼原因。
+>
+> 請幫我在「觸發達標檢查並發通知」的地方，
+> 加上暫時的除錯方式，讓我在 Console 也能看到伺服器回傳的完整內容。
+> ```
 
-加上成功/失敗分流，讓每次呼叫的結果一目瞭然：
+---
 
-```ts
-if (res && res.ok) {
-  console.log("Server-side target check & Telegram notification triggered successfully");
-} else {
-  console.error("Failed to trigger server-side target check & Telegram notification: ", res?.error);
-}
-```
+#### Step 4：確認 root cause，請 AI 給出修改建議
 
-### 目前的版本（你在專案中的作法）
+一句話總結（供講師對照，學員可直接貼給 AI）：
+
+> 達標檢查失敗時，錯誤被「空 catch」整口吞掉，Console 完全看不到；改為印出錯誤與回傳內容後，還應區分成功／失敗，讓每次呼叫的結果一目了然。
+> 目前先能夠在 Console 看到失敗原因即可，以後再來優化錯誤怎麼顯示在 UI 上。切記！ 不要一次改太多！
+
+> **🎯 給 AI 的提示詞：**
+>
+> ```
+> 透過剛剛的分析，問題是：達標檢查請求失敗時錯誤被完全吞掉，
+> 我後來加了 log 才看到伺服器回傳的錯誤原因。
+>
+> 請根據這個問題，幫我提供完整的修改建議，
+> 讓每次觸發達標檢查時，在 Console 都能清楚看到是成功還是失敗，
+> 失敗的話也要顯示具體原因。
+> ```
+
+### 目前的版本（講師參考：依 Step 1–4 提示詞逐步改完後的結果）
 
 以上步驟全部串起來後，專案中目前的程式碼長這樣（`hooks/useWatchlistPolling.ts` line 115）：
 
@@ -161,6 +223,23 @@ const low = lastNonNull(quote.low) ?? 0;
 const open = lastNonNull(quote.open) ?? 0;
 const volume = lastNonNull(quote.volume) ?? 0;
 ```
+
+### Debug 流程摘要
+
+> **一句話定位：** 資料看起來有值但「算錯了」 → 把 raw data 跟 computed 並排比對。
+
+
+| 步驟         | 在做什麼                                    | 用到的工具           |
+| ---------- | --------------------------------------- | --------------- |
+| **Step 1** | 問三個問題縮小範圍（Y 軸範圍？開盤價對嗎？成交量對嗎？）           | 肉眼觀察            |
+| **Step 2** | 加 log 同時印出「API 原始資料」和「程式算出來的值」          | `console.log`   |
+| **Step 3** | 並排比對，發現 high / low / open / volume 全部算錯 | 肉眼比對 Console 輸出 |
+| **Step 4** | 確認 root cause：不同欄位需要不同的聚合方式             | 請 AI 二次驗證       |
+
+
+**Debug 節奏：** 從「覺得圖表怪怪的」→「看到 raw data vs computed 的落差」→「發現是聚合邏輯用錯」→「確認 root cause」。
+
+---
 
 ### Debug 流程
 
@@ -417,12 +496,12 @@ d2fe8c3  更新 spec，寫明 OHLC 資料規範（文件對齊）
 ## 附錄：兩者對照表
 
 
-|               | 情境 A：靜默錯誤                          | 情境 B：資料形狀錯誤                   |
-| ------------- | ---------------------------------- | ----------------------------- |
-| **症狀**        | 沒收到通知，但頁面正常                        | 圖表怪怪的但不會 crash                |
-| **讓錯誤現形的工具**  | `console.error` + `console.log` 裸打 | `console.log` raw API payload |
-| **核心 lesson** | 空 catch 是萬惡之源                      | 型別定義 ≠ 實際資料形狀                 |
-| **修復範圍**      | 單點（1 個 catch → log）                | 跨 6 個 commits、4 個檔案           |
-| **課程定位**      | 聽不到 → 讓它出聲                         | 聽不懂 → 可視化 raw data            |
+|               | 情境 A：靜默錯誤                       | 情境 B：資料形狀錯誤                   |
+| ------------- | ------------------------------- | ----------------------------- |
+| **症狀**        | 沒收到通知，但頁面正常                     | 圖表怪怪的但不會 crash                |
+| **讓錯誤現形的工具**  | 給 AI 提示詞 → Console / Network 觀察 | `console.log` raw API payload |
+| **核心 lesson** | 空 catch 是萬惡之源                   | 型別定義 ≠ 實際資料形狀                 |
+| **修復範圍**      | 單點（達標檢查的錯誤處理）                   | 跨 6 個 commits、4 個檔案           |
+| **課程定位**      | 聽不到 → 用 AI 提示詞讓它出聲              | 聽不懂 → 可視化 raw data            |
 
 
