@@ -20,7 +20,7 @@ export function QueryAndTrackCard({ isLoading, onQuery }: QueryAndTrackCardProps
       <div className="mb-6">
         <h2 className="text-xl font-bold text-on-background">查詢與追蹤</h2>
         <p className="mt-1 text-sm text-on-background-muted">
-          輸入完整台股代號查詢即時股價，例如 2330.TW
+          輸入股票代號查詢即時股價，例如 2330.TW、AAPL、7000.HK
         </p>
       </div>
 
