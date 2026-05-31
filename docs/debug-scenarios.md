@@ -39,18 +39,12 @@ fetch("/api/check-prices").catch((err) => {
 
 1. 打開瀏覽器 DevTools → **Console** tab
 2. 觸發輪詢（等待 POLL_INTERVAL_MS 或手動操作）
-3. 如果看到類似以下的輸出，表示錯誤一直被吞：
-
-```
-Failed to trigger server-side target check & Telegram notification: Error: 500
-```
-
-4. 切到 **Network** tab，過濾 `check-prices`
-5. 點進那條 request，看 **Response** body 知道具體失敗原因
+3. 切到 **Network** tab，過濾 `check-prices`
+4. 點進那條 request，看 **Response** body 知道具體失敗原因
 
 #### Step 3：再加一層，觀察 response body
 
-錯誤訊息說明了「有錯誤」，但看不出具體原因。再加一道：
+錯誤訊息說明了「有錯誤」，但我們在 Console 中看不到，因此看不到具體原因。請 AI 幫我們調整程式碼：「Console 中也能看到錯誤訊息」
 
 ```ts
 const res = await fetch("/api/check-prices").catch((err) => {
@@ -117,7 +111,7 @@ if (res && res.ok) {
 
 | 層級 | 作法 | 何時該用 |
 |------|------|---------|
-| **Level 0** | `.catch(() => {})` | 沒有這個選項 ❌ |
+| **Level 0** | `.catch(() => {})` | 不應該有這個選項 ❌，當初只是為了「快速產出」而寫，實際上就算是「prototype」也應該要處理錯誤 |
 | **Level 1** | `console.error` + `console.log` 裸打 | 原型期、課程示範、快速 debug |
 | **Level 2** | 封裝 `fetchWithLog` wrapper，統一處理 error / success | 正式產品 |
 | **Level 3** | 封裝 fetch layer + error boundary + monitoring（Sentry 等） | 成熟產品 |
