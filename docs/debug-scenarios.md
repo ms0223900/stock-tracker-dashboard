@@ -103,18 +103,21 @@ if (res && res.ok) {
 ```
 
 雖然不算優雅（沒有封裝、直接用 `console.log` / `console.error` 裸打），但：
+
 - **直覺易懂** — 任何開發者看一眼就知道它在做什麼
 - **立刻可視** — 打開 Console 就看到成功/失敗全貌
 - **容易複製** — 新手也能照著寫
 
 ### 三個層級的演化
 
-| 層級 | 作法 | 何時該用 |
-|------|------|---------|
-| **Level 0** | `.catch(() => {})` | 不應該有這個選項 ❌，當初只是為了「快速產出」而寫，實際上就算是「prototype」也應該要處理錯誤 |
-| **Level 1** | `console.error` + `console.log` 裸打 | 原型期、課程示範、快速 debug |
-| **Level 2** | 封裝 `fetchWithLog` wrapper，統一處理 error / success | 正式產品 |
-| **Level 3** | 封裝 fetch layer + error boundary + monitoring（Sentry 等） | 成熟產品 |
+
+| 層級          | 作法                                                     | 何時該用                                                |
+| ----------- | ------------------------------------------------------ | --------------------------------------------------- |
+| **Level 0** | `.catch(() => {})`                                     | 不應該有這個選項 ❌，當初只是為了「快速產出」而寫，實際上就算是「prototype」也應該要處理錯誤 |
+| **Level 1** | `console.error` + `console.log` 裸打                     | 原型期、課程示範、快速 debug                                   |
+| **Level 2** | 封裝 `fetchWithLog` wrapper，統一處理 error / success         | 正式產品                                                |
+| **Level 3** | 封裝 fetch layer + error boundary + monitoring（Sentry 等） | 成熟產品                                                |
+
 
 ### 總結教訓
 
@@ -169,13 +172,16 @@ const volume = lastNonNull(quote.volume) ?? 0;
 
 「折線圖怪怪的」太模糊。先問三個問題：
 
-| 問題 | 檢查方式 |
-|------|---------|
-| Y 軸範圍對嗎？ | 看折線圖的 domain：`[0, maxPrice]` 還是 `[minPrice, maxPrice]`？ |
-| 開盤價是今天的還是昨天的？ | 比對 currentPrice 和 open |
-| 成交量是 total 還是最後一根？ | 看 volume 數字合不合理（幾百萬還是幾百？） |
+
+| 問題                 | 檢查方式                                                    |
+| ------------------ | ------------------------------------------------------- |
+| Y 軸範圍對嗎？           | 看折線圖的 domain：`[0, maxPrice]` 還是 `[minPrice, maxPrice]`？ |
+| 開盤價是今天的還是昨天的？      | 比對 currentPrice 和 open                                  |
+| 成交量是 total 還是最後一根？ | 看 volume 數字合不合理（幾百萬還是幾百？）                               |
+
 
 > **🎯 給 AI 的提示詞：**
+>
 > ```
 > 我的股票查詢頁面中，折線圖顯示的價格範圍怪怪的，低點跑到 0 附近，
 > 而且開盤價看起來不對。
@@ -202,12 +208,14 @@ console.log("COMPUTED:", { high, low, open, volume });
 ```
 
 > **🎯 給 AI 的提示詞：**
+>
 > ```
-> 請在 lib/yahoo-finance.ts 的 fetchStockPriceRaw 函數中，
-> 在 parse 完 Yahoo API response 之後、回傳結果之前，
-> 幫我加入 console.log，印出 quote.open / quote.high / quote.low / quote.close / quote.volume
-> 的原始陣列內容，以及計算後的 high / low / open / volume 數值。
-> 我要在瀏覽器 Console 中比對 raw 資料和計算結果。
+> 我懷疑股票報價的計算結果有問題，但我想先看看 Yahoo API
+> 實際回傳的原始資料長什麼樣子，再跟我程式算出來的結果比對。
+> 請幫我在 lib/yahoo-finance.ts 的 fetchStockPriceRaw 函數中，
+> 加入一些暫時的程式碼，讓我在瀏覽器的開發者工具 Console 中
+> 同時看到「Yahoo 回傳的原始 open / high / low / close / volume 陣列」
+> 以及「我程式算出來的高、低、開盤價、成交量」。
 > ```
 
 ---
@@ -230,29 +238,37 @@ COMPUTED: { high: 150.8, low: 149.8, open: 150.5, volume: 2000 }
 
 發現問題：
 
-| 欄位 | Raw 中的正確值 | Computed（lastNonNull） | 錯在哪 |
-|------|---------------|------------------------|--------|
-| high | `151.0`（第一根） | `150.8`（最後非 null） | 應取最大值而非最後值 |
-| low | `149.8`（第一根） | `149.8`（矇對） | 應取最小值，只是碰巧對 |
-| open | `150.0`（第一根） | `150.5`（倒數第二根） | 應取第一根而非最後一根 |
-| volume | `1000 + 2000 = 3000` | `2000`（最後非 null） | 應加總而非取最後 |
+
+| 欄位     | Raw 中的正確值            | Computed（lastNonNull） | 錯在哪         |
+| ------ | -------------------- | --------------------- | ----------- |
+| high   | `151.0`（第一根）         | `150.8`（最後非 null）     | 應取最大值而非最後值  |
+| low    | `149.8`（第一根）         | `149.8`（矇對）           | 應取最小值，只是碰巧對 |
+| open   | `150.0`（第一根）         | `150.5`（倒數第二根）        | 應取第一根而非最後一根 |
+| volume | `1000 + 2000 = 3000` | `2000`（最後非 null）      | 應加總而非取最後    |
+
 
 > **🎯 給 AI 的提示詞：**
+>
 > ```
-> 我在瀏覽器 Console 看到以下輸出：
+> 我在瀏覽器 Console 貼上我看到的輸出，請幫我看看問題在哪裡：
 >
-> RAW:  open=[150.0, null, null, 150.5, null]
->       high=[151.0, null, null, 150.5, 150.8]
->       low=[149.8, null, null, 150.1, null]
->       close=[150.0, null, null, 150.5, 150.3]
->       volume=[1000, 0, 0, 2000, 0]
+> --- 原始資料（Yahoo API 回傳）---
+> open:   [150.0, null, null, 150.5, null]
+> high:   [151.0, null, null, 150.5, 150.8]
+> low:    [149.8, null, null, 150.1, null]
+> close:  [150.0, null, null, 150.5, 150.3]
+> volume: [1000, 0, 0, 2000, 0]
 >
-> COMPUTED: high=150.8, low=149.8, open=150.5, volume=2000
+> --- 我的程式算出來的結果 ---
+> high=150.8, low=149.8, open=150.5, volume=2000
 >
-> 看起來 computed 的值不對——high 應該是 151.0（最高）、
-> open 應該是 150.0（第一根）、volume 應該是 3000（加總）。
-> 請幫我分析 lib/yahoo-finance.ts 中 fetchStockPriceRaw 的計算邏輯，
-> 告訴我問題出在哪裡。
+> 我覺得怪怪的：
+> - high 怎麼是 150.8？原始資料裡明明有 151.0
+> - open 怎麼是 150.5？我以為開盤價應該是第一筆 150.0
+> - volume 怎麼是 2000？如果加起來應該是 1000+2000=3000 才對
+>
+> 請幫我對照 lib/yahoo-finance.ts 中 fetchStockPriceRaw 的程式碼，
+> 告訴我為什麼算出來的值跟我想像的不一樣。
 > ```
 
 ---
@@ -261,31 +277,32 @@ COMPUTED: { high: 150.8, low: 149.8, open: 150.5, volume: 2000 }
 
 一句話總結：
 
-> **`lastNonNull`（取最後非 null 值）只對 close 是正確的，對 high / low / open / volume 都是錯的聚合邏輯。**
+> `**lastNonNull`（取最後非 null 值）只對 close 是正確的，對 high / low / open / volume 都是錯的聚合邏輯。**
 
 各欄位需要的聚合方式完全不同：
 
-| 欄位 | 正確含義 | 需要的聚合 |
-|------|---------|-----------|
-| `open` | 開盤價 | **第一根**有效值 → `firstNonNull` |
-| `high` | 全日最高價 | **最大值** → `maxNonNull` |
-| `low` | 全日最低價 | **最小值** → `minNonNull` |
-| `volume` | 全日成交量 | **加總** → `sumNonNull` |
-| `close` | 最後成交價 | **最後一根**有效值 → `lastNonNull` ✅ |
+
+| 欄位       | 正確含義  | 需要的聚合                         |
+| -------- | ----- | ----------------------------- |
+| `open`   | 開盤價   | **第一根**有效值 → `firstNonNull`   |
+| `high`   | 全日最高價 | **最大值** → `maxNonNull`        |
+| `low`    | 全日最低價 | **最小值** → `minNonNull`        |
+| `volume` | 全日成交量 | **加總** → `sumNonNull`         |
+| `close`  | 最後成交價 | **最後一根**有效值 → `lastNonNull` ✅ |
+
 
 > **🎯 給 AI 的提示詞：**
+>
 > ```
-> 我發現 lib/yahoo-finance.ts 中 fetchStockPriceRaw 函數
-> 對 high / low / open / volume 全部使用 lastNonNull 來取值，
-> 但 Yahoo API 回傳的陣列裡面有很多 null。
+> 經過前面的分析，我猜問題出在：
+> -  Yahoo 回傳的 open / high / low / volume 陣列裡面有很多 null
+> -  我的程式用「取最後一個不是 null 的值」來處理所有欄位
+> -  但 high 應該找「最大值」、open 應該找「第一筆」、
+>    volume 應該「全部加起來」才對
 >
-> 請幫我確認我的理解是否正確：
-> - high 應該取陣列中的「最大值」而非「最後非 null」
-> - low 應該取「最小值」
-> - open 應該取「第一根有效值」
-> - volume 應該「加總」
->
-> 如果理解正確，請幫我寫一組新的輔助函數來取代 lastNonNull。
+> 可以幫我確認這個理解正確嗎？如果正確，
+> 也請幫我檢查 lib/yahoo-finance.ts 中 fetchStockPriceRaw 的程式碼，
+> 告訴我總共有哪些地方需要修改。
 > ```
 
 ### 解法
@@ -319,6 +336,21 @@ function sumNonNull(nums: (number | null)[] | undefined): number {
 }
 ```
 
+> **🎯 給 AI 的提示詞：**
+>
+> ```
+> 承上，我需要在 lib/yahoo-finance.ts 中新增幾支小工具函數，
+> 用來處理「陣列裡面有 null」的狀況。我需要：
+>
+> 1. 過濾掉陣列中的 null，只留下有效數字
+> 2. 從陣列中取出「第一筆」有效值（給開盤價用）
+> 3. 從陣列中取出「最大值」（給最高價用）
+> 4. 從陣列中取出「最小值」（給最低價用）
+> 5. 把陣列中所有有效數字「加總」（給成交量用）
+>
+> 請幫我寫在 lib/yahoo-finance.ts 中，放在原本 lastNonNull 函數的附近。
+> ```
+
 #### 改寫 OHLC parse 邏輯
 
 ```ts
@@ -332,6 +364,21 @@ const volume = sumNonNull(quote.volume);
 ```
 
 > 注意 fallback 鏈：先嘗試對應的聚合，若全為 null 則試 close 陣列的同一聚合，最後才用 `?? 0` 兜底。
+
+> **🎯 給 AI 的提示詞：**
+>
+> ```
+> 工具函數寫好之後，請幫我把 fetchStockPriceRaw 函數中
+> 計算 high / low / open / volume 的這四行程式碼改掉：
+>
+> high   = lastNonNull(quote.high) ?? 0
+> low    = lastNonNull(quote.low) ?? 0
+> open   = lastNonNull(quote.open) ?? 0
+> volume = lastNonNull(quote.volume) ?? 0
+>
+> 改成分別用剛剛建立的新函數來處理。
+> 如果某個陣列全部都是 null，可以改拿 close 陣來代替當備用。
+> ```
 
 #### ChartData 也一併過濾
 
@@ -348,6 +395,15 @@ for (let i = 0; i < result.timestamp.length; i++) {
   }
 }
 ```
+
+> **🎯 給 AI 的提示詞：**
+>
+> ```
+> 我還發現折線圖的 chartData 在建構時，雖然已經有過濾掉 null，
+> 但可以幫我 double check 一下 fetchStockPriceRaw 中
+> 建立 chartData 的那段迴圈，確認 null 的處理是正確的嗎？
+> 如果有遺漏，請幫我補上。
+> ```
 
 ### 真實 commit 鏈
 
@@ -377,10 +433,13 @@ d2fe8c3  更新 spec，寫明 OHLC 資料規範（文件對齊）
 
 ## 附錄：兩者對照表
 
-| | 情境 A：靜默錯誤 | 情境 B：資料形狀錯誤 |
-|--|-----------------|-------------------|
-| **症狀** | 沒收到通知，但頁面正常 | 圖表怪怪的但不會 crash |
-| **讓錯誤現形的工具** | `console.error` + `console.log` 裸打 | `console.log` raw API payload |
-| **核心 lesson** | 空 catch 是萬惡之源 | 型別定義 ≠ 實際資料形狀 |
-| **修復範圍** | 單點（1 個 catch → log） | 跨 6 個 commits、4 個檔案 |
-| **課程定位** | 聽不到 → 讓它出聲 | 聽不懂 → 可視化 raw data |
+
+|               | 情境 A：靜默錯誤                          | 情境 B：資料形狀錯誤                   |
+| ------------- | ---------------------------------- | ----------------------------- |
+| **症狀**        | 沒收到通知，但頁面正常                        | 圖表怪怪的但不會 crash                |
+| **讓錯誤現形的工具**  | `console.error` + `console.log` 裸打 | `console.log` raw API payload |
+| **核心 lesson** | 空 catch 是萬惡之源                      | 型別定義 ≠ 實際資料形狀                 |
+| **修復範圍**      | 單點（1 個 catch → log）                | 跨 6 個 commits、4 個檔案           |
+| **課程定位**      | 聽不到 → 讓它出聲                         | 聽不懂 → 可視化 raw data            |
+
+
