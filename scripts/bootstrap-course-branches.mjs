@@ -398,6 +398,7 @@ function bootstrapStarter(dryRun) {
     processLinePushUserStories(ROOT);
 
     run("git add -A", { stdio: "inherit" });
+    removePath(join(ROOT, ".next"));
     console.log("Installing dependencies...");
     run("npm ci", { stdio: "inherit" });
     console.log("Running typecheck & build...");
@@ -452,6 +453,7 @@ function bootstrapAdvanced(dryRun) {
     }
 
     run("git add -A", { stdio: "inherit" });
+    removePath(join(ROOT, ".next"));
     console.log("Running typecheck & build...");
     run("npm run typecheck", { stdio: "inherit" });
     run("npm run build", { stdio: "inherit" });
