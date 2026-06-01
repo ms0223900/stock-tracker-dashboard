@@ -28,6 +28,7 @@ const STARTER_BRANCH = "course/student-starter";
 const ADVANCED_BRANCH = "course/student-advanced-features";
 
 const STARTER_KEEP_ROOT = new Set([
+  "README.md",
   "package.json",
   "package-lock.json",
   "tsconfig.json",
