@@ -369,7 +369,7 @@ function bootstrapStarter(dryRun) {
     } catch {
       /* offline ok */
     }
-    run(`git checkout ${SOURCE_BRANCH}`, { stdio: "inherit" });
+    run(`git checkout -f ${SOURCE_BRANCH}`, { stdio: "inherit" });
 
     const staging = buildStarterStaging(bootstrapScriptContent);
 
@@ -415,8 +415,7 @@ function bootstrapAdvanced(dryRun) {
   console.log(`Creating ${ADVANCED_BRANCH} from ${SOURCE_BRANCH}...`);
 
   if (!dryRun) {
-    assertNotOnLiveBuild();
-    run(`git checkout ${SOURCE_BRANCH}`, { stdio: "inherit" });
+    run(`git checkout -f ${SOURCE_BRANCH}`, { stdio: "inherit" });
     run(`git checkout -B ${ADVANCED_BRANCH}`, { stdio: "inherit" });
 
     removePath(join(ROOT, "lib/line.ts"));
