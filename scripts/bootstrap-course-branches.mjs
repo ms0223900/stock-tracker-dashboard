@@ -309,7 +309,15 @@ function buildStarterStaging(bootstrapScriptContent) {
     }
   }
 
-  for (const rel of ["app/layout.tsx", "app/globals.css", "app/favicon.ico"]) {
+  try {
+    run(`git archive ${SOURCE_BRANCH} app/favicon.ico | tar -x -C "${staging}"`, {
+      shell: true,
+    });
+  } catch {
+    console.warn("Skip app/favicon.ico");
+  }
+
+  for (const rel of ["app/layout.tsx", "app/globals.css"]) {
     try {
       const content = gitShow(rel);
       const dest = join(staging, rel);
@@ -389,6 +397,8 @@ function bootstrapStarter(dryRun) {
     processLinePushUserStories(ROOT);
 
     run("git add -A", { stdio: "inherit" });
+    console.log("Installing dependencies...");
+    run("npm ci", { stdio: "inherit" });
     console.log("Running typecheck & build...");
     run("npm run typecheck", { stdio: "inherit" });
     run("npm run build", { stdio: "inherit" });
