@@ -33,6 +33,7 @@ const STARTER_KEEP_ROOT = new Set([
   "tsconfig.json",
   "eslint.config.mjs",
   "postcss.config.mjs",
+  "next.config.mjs",
   "next-env.d.ts",
   ".env.example",
   ".gitignore",
@@ -278,21 +279,81 @@ function removePath(target) {
   rmSync(target, { recursive: true, force: true });
 }
 
-function listAllFiles(dir, base = dir) {
-  const out = [];
-  for (const name of readdirSync(dir)) {
-    const full = join(dir, name);
-    if (statSync(full).isDirectory()) {
-      out.push(...listAllFiles(full, base));
-    } else {
-      out.push(relative(base, full));
+function extractArchivePaths(paths) {
+  const staging = join(ROOT, ".bootstrap-staging");
+  for (const p of paths) {
+    try {
+      run(`git archive ${SOURCE_BRANCH} ${p} | tar -x -C "${staging}"`, {
+        shell: true,
+        maxBuffer: 20 * 1024 * 1024,
+      });
+    } catch (e) {
+      console.warn(`Skip archive ${p}:`, e.message);
     }
   }
-  return out;
+}
+
+function buildStarterStaging(bootstrapScriptContent) {
+  const staging = join(ROOT, ".bootstrap-staging");
+  removePath(staging);
+  mkdirSync(staging, { recursive: true });
+
+  for (const file of STARTER_KEEP_ROOT) {
+    try {
+      const content = gitShow(file);
+      const dest = join(staging, file);
+      mkdirSync(dirname(dest), { recursive: true });
+      writeFileSync(dest, content);
+    } catch (e) {
+      console.warn(`Skip missing ${file}:`, e.message);
+    }
+  }
+
+  for (const rel of ["app/layout.tsx", "app/globals.css", "app/favicon.ico"]) {
+    try {
+      const content = gitShow(rel);
+      const dest = join(staging, rel);
+      mkdirSync(dirname(dest), { recursive: true });
+      writeFileSync(dest, content);
+    } catch {
+      console.warn(`Skip ${rel}`);
+    }
+  }
+
+  writeFileSync(join(staging, "app/page.tsx"), STARTER_PAGE);
+
+  extractArchivePaths([
+    "docs/user-stories",
+    "docs/line-push-vercel-cron",
+  ]);
+
+  for (const docPath of ["docs/spec.md", "docs/COURSE-BRANCHES.md", "docs/design.pen"]) {
+    try {
+      const content = gitShow(docPath);
+      const dest = join(staging, docPath);
+      mkdirSync(dirname(dest), { recursive: true });
+      writeFileSync(dest, content);
+    } catch (e) {
+      console.warn(`Skip doc ${docPath}:`, e.message);
+    }
+  }
+
+  mkdirSync(join(staging, "scripts"), { recursive: true });
+  writeFileSync(
+    join(staging, "scripts/bootstrap-course-branches.mjs"),
+    bootstrapScriptContent,
+  );
+
+  return staging;
 }
 
 function bootstrapStarter(dryRun) {
   console.log(`Creating ${STARTER_BRANCH} from ${SOURCE_BRANCH}...`);
+
+  const bootstrapScriptContent = readFileSync(
+    join(ROOT, "scripts/bootstrap-course-branches.mjs"),
+    "utf8",
+  );
 
   if (!dryRun) {
     try {
@@ -301,73 +362,16 @@ function bootstrapStarter(dryRun) {
       /* offline ok */
     }
     run(`git checkout ${SOURCE_BRANCH}`, { stdio: "inherit" });
+
+    const staging = buildStarterStaging(bootstrapScriptContent);
+
     try {
       run(`git branch -D ${STARTER_BRANCH}`, { stdio: "pipe" });
     } catch {
       /* ignore */
     }
     run(`git checkout --orphan ${STARTER_BRANCH}`, { stdio: "inherit" });
-    run("git rm -rf .", { stdio: "inherit" });
-  }
-
-  const staging = join(ROOT, ".bootstrap-staging");
-  if (!dryRun) {
-    removePath(staging);
-    mkdirSync(staging, { recursive: true });
-
-    for (const file of STARTER_KEEP_ROOT) {
-      try {
-        const content = gitShow(file);
-        const dest = join(staging, file);
-        mkdirSync(dirname(dest), { recursive: true });
-        writeFileSync(dest, content);
-      } catch (e) {
-        console.warn(`Skip missing ${file}:`, e.message);
-      }
-    }
-
-    for (const rel of ["app/layout.tsx", "app/globals.css", "app/favicon.ico"]) {
-      try {
-        const content = gitShow(rel);
-        const dest = join(staging, rel);
-        mkdirSync(dirname(dest), { recursive: true });
-        writeFileSync(dest, content);
-      } catch {
-        console.warn(`Skip ${rel}`);
-      }
-    }
-
-    writeFileSync(join(staging, "app/page.tsx"), STARTER_PAGE);
-
-    for (const docPath of STARTER_DOC_PATHS) {
-      try {
-        const isDir = !docPath.endsWith(".md") && !docPath.endsWith(".pen");
-        if (isDir) {
-          const files = run(`git ls-tree -r --name-only ${SOURCE_BRANCH} -- ${docPath}`)
-            .trim()
-            .split("\n")
-            .filter(Boolean);
-          for (const f of files) {
-            const content = run(`git show ${SOURCE_BRANCH}:${f}`, { maxBuffer: 10 * 1024 * 1024 });
-            const dest = join(staging, f);
-            mkdirSync(dirname(dest), { recursive: true });
-            writeFileSync(dest, content);
-          }
-        } else {
-          const content = gitShow(docPath);
-          const dest = join(staging, docPath);
-          mkdirSync(dirname(dest), { recursive: true });
-          writeFileSync(dest, content);
-        }
-      } catch (e) {
-        console.warn(`Skip doc ${docPath}:`, e.message);
-      }
-    }
-
-    writeFileSync(
-      join(staging, "scripts/bootstrap-course-branches.mjs"),
-      readFileSync(join(ROOT, "scripts/bootstrap-course-branches.mjs")),
-    );
+    run("git rm -rf . 2>/dev/null || true", { stdio: "inherit", shell: true });
 
     for (const entry of readdirSync(staging)) {
       const src = join(staging, entry);
