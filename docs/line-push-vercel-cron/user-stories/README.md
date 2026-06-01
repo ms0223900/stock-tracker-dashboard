@@ -26,7 +26,7 @@ US-002（達標 LINE + refresh-watchlist-prices 整合）
 US-003（Vercel Cron + secret + GET）
 ```
 
-（隱含前提：主專案已完成 Supabase watchlist、Yahoo 查價、`/api/check-prices` 既有流程 — 見 `docs/init-project-features/user-stories`。）
+（隱含前提：主專案已完成 Supabase watchlist、Yahoo 查價、`/api/check-prices` 既有流程 — 見 [`docs/user-stories/`](../../user-stories/) 主線 US-01～04。）
 
 ---
 
