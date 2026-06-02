@@ -1,4 +1,3 @@
-import { sendLineText } from "@/lib/line";
 import { sendTelegramText } from "@/lib/telegram";
 
 export type TargetPriceAlertPayload = {
@@ -19,12 +18,6 @@ export type SendTargetPriceNotificationsResult =
 export function isTelegramEnabled(): boolean {
   return Boolean(
     process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID,
-  );
-}
-
-export function isLineEnabled(): boolean {
-  return Boolean(
-    process.env.LINE_CHANNEL_ACCESS_TOKEN && process.env.LINE_USER_ID,
   );
 }
 
@@ -57,47 +50,22 @@ export async function sendTargetPriceNotifications(
   payload: TargetPriceAlertPayload,
 ): Promise<SendTargetPriceNotificationsResult> {
   const message = buildTargetPriceAlertMessage(payload);
-  const tasks: Array<Promise<{ channel: string; ok: boolean }>> = [];
 
-  if (isTelegramEnabled()) {
-    tasks.push(
-      sendTelegramText(message).then((result) => ({
-        channel: "telegram",
-        ok: result.ok,
-      })),
-    );
-  }
-
-  if (isLineEnabled()) {
-    const userId = process.env.LINE_USER_ID!;
-
-    tasks.push(
-      sendLineText(userId, message).then((result) => ({
-        channel: "line",
-        ok: result.ok,
-      })),
-    );
-  }
-
-  if (tasks.length === 0) {
+  if (!isTelegramEnabled()) {
     console.error(
-      "target notification: no enabled channels (telegram or line env missing)",
+      "target notification: telegram env missing (TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID)",
     );
     return { ok: false, reason: "no_channels" };
   }
 
-  const results = await Promise.all(tasks);
-  const failedChannels = results.filter((result) => !result.ok);
+  const result = await sendTelegramText(message);
 
-  if (failedChannels.length > 0) {
-    console.error(
-      "target notification failed for channels:",
-      failedChannels.map((result) => result.channel).join(", "),
-    );
+  if (!result.ok) {
+    console.error("target notification failed for telegram");
     return {
       ok: false,
       reason: "send_failed",
-      failedChannels: failedChannels.map((result) => result.channel),
+      failedChannels: ["telegram"],
     };
   }
 
