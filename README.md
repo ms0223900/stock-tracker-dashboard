@@ -40,7 +40,7 @@
 ## 安裝
 
 ```bash
-# 1. Clone 專案（請確認 checkout 正確分支，見下方「如何開發」）
+# 1. Clone 專案（作業請 clone 本機或 fork 後 clone 自己的 repo，見下方「作業流程」）
 git clone <repository-url>
 cd stock-tracker-dashboard
 
@@ -110,6 +110,64 @@ npm run dev
 本 repo 依課程階段提供多條分支，**請依課程平台提供的教學影片**逐步實作；影片章節通常對應下方 User Story 順序。
 
 > 分支詳細說明：`[docs/COURSE-BRANCHES.md](docs/COURSE-BRANCHES.md)`
+
+### 0. 作業流程（Clone 或 Fork）
+
+本 repo 為**公開課程教材**；除維護者外，學員僅能 **讀取、clone、fork**，**無法 push 至課程 upstream**。請擇一方式在本機完成作業：
+
+| 方式 | 適合情境 | 說明 |
+| ---- | -------- | ---- |
+| **A. Clone 到本機** | 只在本地練習、尚未需要 GitHub 備份 | 最簡單；commit 可只留在本機 |
+| **B. Fork 到自己的 GitHub** | 要備份程式、要接 Vercel 部署（US-06） | Fork 後 push 到自己的 repo，不影響課程 upstream |
+
+**共通注意事項**
+
+- 作業請在 `course/student-starter`（或加分章節的 `course/student-advanced-features`）上開發；**勿在 `course/live-build` 練習**（該分支僅供對答案）。
+- `.env.local` 含機密，**勿提交至 Git**（已在 `.gitignore`）。
+- 無需也不應向課程 repo 申請 Write 權限。
+
+**方式 A：Clone 到本機**
+
+```bash
+git clone <repository-url>
+cd stock-tracker-dashboard
+git checkout course/student-starter   # 主線起點；加分章節改 checkout student-advanced-features
+
+cp .env.example .env.local
+npm install
+npm run dev
+```
+
+**方式 B：Fork 後 Clone 自己的 Repo**
+
+1. 在 GitHub 對本 repo 按 **Fork**，複製到你自己的帳號下。
+2. Clone **你的 fork**（不是你的 fork 請將 `<your-username>` 換成你的 GitHub 帳號）：
+
+```bash
+git clone https://github.com/<your-username>/stock-tracker-dashboard.git
+cd stock-tracker-dashboard
+git checkout course/student-starter
+
+cp .env.example .env.local
+npm install
+npm run dev
+```
+
+3. 日常 commit / push 目標為 **自己的 fork**：
+
+```bash
+git add .
+git commit -m "完成 US-01 即時查價"
+git push origin course/student-starter   # 或 push 到你自己建立的分支
+```
+
+若課程 upstream 有更新（例如修正文件），可從 upstream 同步：
+
+```bash
+git remote add upstream <repository-url>   # 僅第一次需要
+git fetch upstream
+git merge upstream/course/student-starter  # 或 rebase，擇一即可
+```
 
 ### 1. 確認分支
 
@@ -191,6 +249,9 @@ stock-tracker-dashboard/
 詳細步驟見 `[docs/user-stories/US-06.md](docs/user-stories/US-06.md)`。
 
 ## 常見問題
+
+**Q：我可以 push 到課程 repo 嗎？**  
+A：不行。課程 upstream 僅供閱讀與對照；請在本機開發，或 fork 到自己的 GitHub 後 push 至 **你的 fork**。部署 Vercel 時也請連結自己的 fork。
 
 **Q：查價顯示「目前無法取得股價資料，請稍後再試」**  
 A：確認代號格式（如 `2330.TW`）、網路連線，以及 Yahoo API 是否暫時不可用；可稍後重試。
