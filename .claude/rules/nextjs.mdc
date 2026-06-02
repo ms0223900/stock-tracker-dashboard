@@ -1,0 +1,35 @@
+---
+description: PROTOTYPE Next.js—inline fetch OK in early delivery; server-only secrets; Yahoo helper recommended when duplicated.
+globs: "**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# Next.js（PROTOTYPE）
+
+## 目標
+
+- **快**：先讓頁面與 API 可驗收；可暫時在 route 或單一檔內寫 fetch／parse。
+
+## 不可妥協
+
+- **`NEXT_PUBLIC_*`** 不得放 service role、Telegram token、chat id。
+- 需 token 的邏輯只在 **server**（Route Handler / Server Action）。
+
+## App Router
+
+- 需要 `useState`、輪詢、瀏覽器 API → `'use client'`。
+- **Yahoo**：若已在兩處複製 chart 請求／解析 → **抽到單一 function**（仍可不拆目錄，放同檔或 `lib/`）。
+- Route Handler：**盡量**回一致 JSON／HTTP status；來不及時也需 **不洩 secret**。
+- Tailwind：**可**將樣式寫在同一元件檔；另拆 CSS module 非必須。
+
+## Do / Don't
+
+| Do | Don't |
+| --- | --- |
+| 機密與 mutations 留 server | client 直接 call Telegram |
+| 股價失敗有繁中提示 | 白屏／uncaught |
+| 重複邏輯第三次再抽 | 一開始就過度分層 |
+
+## 參照
+
+- [`docs/spec.md`](docs/spec.md)、[`AGENTS.md`](AGENTS.md)

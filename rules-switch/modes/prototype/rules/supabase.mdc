@@ -1,0 +1,33 @@
+---
+description: PROTOTYPE Supabase—schema per spec; validate before write; is_notified only after Telegram OK; service role server-only.
+globs: "**/*.{ts,tsx,sql}"
+alwaysApply: false
+---
+
+# Supabase（PROTOTYPE）
+
+## 資料表 `watchlist`
+
+- 欄位與語意以 [`docs/spec.md`](docs/spec.md) §7 為準。
+
+## 絕對底線
+
+- **`symbol`／`target_price`**：寫入前已驗證；否則 **不 insert/update**。
+- **`is_notified`／`notified_at`**：僅在 **Telegram 成功**後更新（見 `telegram.mdc`）。
+- **`SUPABASE_SERVICE_ROLE_KEY`**：**僅 server**；不可進 client／`NEXT_PUBLIC_*`。
+
+## PROTOTYPE 可取捨
+
+- RLS／migration 可先採 **課程最小** 政策，但須在程式或 spec §12 **註明風險**。
+- SQL 變更可先單檔記錄；未完整 `migrations/` 目錄時先 **TODO**。
+
+## Do / Don't
+
+| Do | Don't |
+| --- | --- |
+| 驗證後寫入 | 無效代號／目標價入庫 |
+| service role 只在 server | anon 做特權繞過（未文件化） |
+
+## 參照
+
+- [`docs/spec.md`](docs/spec.md)、[`AGENTS.md`](AGENTS.md)
