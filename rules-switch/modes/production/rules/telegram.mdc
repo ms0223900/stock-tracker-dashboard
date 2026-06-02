@@ -1,0 +1,44 @@
+---
+description: PRODUCTION Telegram—server-only; idempotent notify; typed failures; plaintext messages; strict success-then-db policy.
+globs: "**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# Telegram（PRODUCTION）
+
+## 環境變數
+
+- `TELEGRAM_BOT_TOKEN`、`TELEGRAM_CHAT_ID`：**僅 server**；不可 `NEXT_PUBLIC_*`、不可 client。
+
+## 業務規則
+
+- 僅 `last_price >= target_price` **且** `is_notified === false`。
+- **先** `sendMessage` **成功**，再 **`is_notified = true`**、`notified_at`。
+- 失敗：**不**更新為已通知；log 細節（不含 token）。
+- **防重複**：conditional update、`where is_notified = false`。
+
+## HTTP
+
+- `POST https://api.telegram.org/bot<token>/sendMessage`、`application/json`。
+- **timeout**；非 2xx／`ok: false` → 失敗路徑。
+- **建議 plaintext**；若 `parse_mode` 需完整 escape。
+
+## 訊息內容
+
+- 至少：symbol、現價、目標價、觸發時間（繁中、簡潔）。
+- 對照 [`docs/spec.md`](docs/spec.md) §8 範例。
+
+## 重試
+
+- MVP：避免對同一 row **無節流**無限 retry；可有上限或交給下次 cron／輪詢。
+
+## Do / Don't
+
+| Do | Don't |
+| --- | --- |
+| 成功後才更新 DB | 失敗標已通知 |
+| 處理 timeout／4xx／5xx | 假設永遠成功 |
+
+## 參照
+
+- [`docs/spec.md`](docs/spec.md)、[`supabase.mdc`](supabase.mdc)

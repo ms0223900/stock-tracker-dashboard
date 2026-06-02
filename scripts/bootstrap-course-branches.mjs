@@ -67,6 +67,13 @@ const MAIN_US_FILES = [
   "docs/user-stories/US-06.md",
 ];
 
+/** AI agent config carried from course/live-build to student branches */
+const AI_AGENT_CARRY_PATHS = {
+  rootFiles: ["AGENTS.md"],
+  dirs: ["agents", ".cursor/rules", ".claude/rules", "rules-switch"],
+  scriptFiles: ["scripts/switch-ai-mode.mjs"],
+};
+
 const STARTER_PAGE = `"use client";
 
 export default function Home() {
@@ -294,6 +301,53 @@ function extractArchivePaths(paths) {
   }
 }
 
+function copyFileFromSource(staging, rel) {
+  try {
+    const content = gitShow(rel);
+    const dest = join(staging, rel);
+    mkdirSync(dirname(dest), { recursive: true });
+    writeFileSync(dest, content);
+  } catch (e) {
+    console.warn(`Skip missing ${rel}:`, e.message);
+  }
+}
+
+function copyAiAgentFromSource(staging) {
+  for (const file of AI_AGENT_CARRY_PATHS.rootFiles) {
+    copyFileFromSource(staging, file);
+  }
+  extractArchivePaths(AI_AGENT_CARRY_PATHS.dirs);
+  for (const file of AI_AGENT_CARRY_PATHS.scriptFiles) {
+    copyFileFromSource(staging, file);
+  }
+}
+
+function assertAiAgentFilesPresent(root = ROOT) {
+  const missing = [];
+  for (const file of AI_AGENT_CARRY_PATHS.rootFiles) {
+    if (!existsSync(join(root, file))) missing.push(file);
+  }
+  for (const dir of AI_AGENT_CARRY_PATHS.dirs) {
+    if (!existsSync(join(root, dir))) missing.push(`${dir}/`);
+  }
+  for (const file of AI_AGENT_CARRY_PATHS.scriptFiles) {
+    if (!existsSync(join(root, file))) missing.push(file);
+  }
+  if (missing.length > 0) {
+    console.error(
+      `Missing AI agent files on ${SOURCE_BRANCH}: ${missing.join(", ")}`,
+    );
+    process.exit(1);
+  }
+}
+
+function logDryRunAiAgentPaths() {
+  console.log(`AI agent paths to carry from ${SOURCE_BRANCH}:`);
+  for (const file of AI_AGENT_CARRY_PATHS.rootFiles) console.log(`  ${file}`);
+  for (const dir of AI_AGENT_CARRY_PATHS.dirs) console.log(`  ${dir}/`);
+  for (const file of AI_AGENT_CARRY_PATHS.scriptFiles) console.log(`  ${file}`);
+}
+
 function buildStarterStaging(bootstrapScriptContent) {
   const staging = join(ROOT, ".bootstrap-staging");
   removePath(staging);
@@ -347,6 +401,8 @@ function buildStarterStaging(bootstrapScriptContent) {
     }
   }
 
+  copyAiAgentFromSource(staging);
+
   mkdirSync(join(staging, "scripts"), { recursive: true });
   writeFileSync(
     join(staging, "scripts/bootstrap-course-branches.mjs"),
@@ -358,6 +414,7 @@ function buildStarterStaging(bootstrapScriptContent) {
 
 function bootstrapStarter(dryRun) {
   console.log(`Creating ${STARTER_BRANCH} from ${SOURCE_BRANCH}...`);
+  if (dryRun) logDryRunAiAgentPaths();
 
   const bootstrapScriptContent = readFileSync(
     join(ROOT, "scripts/bootstrap-course-branches.mjs"),
@@ -415,10 +472,13 @@ function bootstrapStarter(dryRun) {
 
 function bootstrapAdvanced(dryRun) {
   console.log(`Creating ${ADVANCED_BRANCH} from ${SOURCE_BRANCH}...`);
+  if (dryRun) logDryRunAiAgentPaths();
 
   if (!dryRun) {
     run(`git checkout -f ${SOURCE_BRANCH}`, { stdio: "inherit" });
     run(`git checkout -B ${ADVANCED_BRANCH}`, { stdio: "inherit" });
+
+    assertAiAgentFilesPresent();
 
     removePath(join(ROOT, "lib/line.ts"));
     removePath(join(ROOT, "app/api/test-line"));
