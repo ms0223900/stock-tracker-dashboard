@@ -159,7 +159,7 @@ export default function StockResultCard({
             >
               {formatPrice(stockData.currentPrice, stockData.currency)}
             </p>
-            <p className="mt-1 text-[13px] text-on-surface-variant">{stockData.currency}</p>
+            <p className="mt-1 text-[13px] text-on-surface-variant">{"TWD"}</p>
             {stockData.change !== null && stockData.changePercent !== null && (
               <div
                 className={`mt-2 flex flex-wrap items-center gap-1 sm:justify-end text-sm font-medium tabular-nums ${changeRowClass}`}
