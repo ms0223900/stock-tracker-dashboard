@@ -9,6 +9,7 @@ export async function GET() {
   if (!result.ok) {
     return NextResponse.json(
       {
+        ok: false,
         error: result.error,
         ...(result.detail !== undefined ? { detail: result.detail } : {}),
       },
