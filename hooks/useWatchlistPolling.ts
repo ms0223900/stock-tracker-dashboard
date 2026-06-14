@@ -12,6 +12,59 @@ import type { WatchlistItem } from "@/types/watchlist";
 import type { Dispatch, SetStateAction } from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
+const CHECK_PRICES_LOG_PREFIX = "[check-prices]";
+
+type CheckPricesResponse = {
+  ok?: boolean;
+  error?: string;
+  detail?: string;
+  message?: string;
+  results?: string[];
+};
+
+function isCheckPricesFailureLine(line: string): boolean {
+  return (
+    line.includes("failed") ||
+    line.includes("error") ||
+    line.includes("LINE failed")
+  );
+}
+
+async function triggerCheckPricesWithLogging(): Promise<void> {
+  try {
+    const res = await fetch("/api/check-prices");
+    const text = await res.text();
+
+    let body: CheckPricesResponse | null = null;
+    try {
+      body = JSON.parse(text) as CheckPricesResponse;
+    } catch {
+      body = null;
+    }
+
+    if (!res.ok) {
+      console.error(
+        CHECK_PRICES_LOG_PREFIX,
+        "HTTP 錯誤:",
+        res.status,
+        body ?? text,
+      );
+      return;
+    }
+
+    const failures = (body?.results ?? []).filter(isCheckPricesFailureLine);
+    if (failures.length > 0) {
+      console.warn(
+        CHECK_PRICES_LOG_PREFIX,
+        "達標但未成功通知:",
+        failures,
+      );
+    }
+  } catch (err) {
+    console.error(CHECK_PRICES_LOG_PREFIX, "請求失敗:", err);
+  }
+}
+
 interface UseWatchlistPollingParams {
   fetchWatchlist: () => Promise<WatchlistItem[] | null>;
   stockData: { symbol: string } | null;
@@ -114,9 +167,7 @@ export function useWatchlistPolling({
     });
 
     // Fire-and-forget: trigger server-side target check & Telegram notification
-    fetch("/api/check-prices").catch(() => {
-      // TODO: add error handling for production mode
-    });
+    void triggerCheckPricesWithLogging();
   };
 
   useEffect(() => {
