@@ -64,6 +64,7 @@ export function useWatchlist() {
     if (data) {
       const items = (data as WatchlistItem[]).map((row) => ({
         ...row,
+        currency: row.currency ?? "TWD",
         previousClose: row.previousClose ?? null,
       }));
       let merged: WatchlistItem[] = items;
@@ -94,6 +95,7 @@ export function useWatchlist() {
         symbol: stockData.symbol,
         target_price: Number(targetPrice),
         last_price: stockData.currentPrice,
+        currency: stockData.currency,
       });
 
       if (error) {

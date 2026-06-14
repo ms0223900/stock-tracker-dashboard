@@ -58,6 +58,7 @@ export function useWatchlistPolling({
         fetchStockPrice(item.symbol).then((d) => ({
           id: item.id,
           price: d.currentPrice,
+          currency: d.currency,
           previousClose: d.previousClose,
           hasRegularMarketPriceFromMeta: d.hasRegularMarketPriceFromMeta,
           chartData: d.chartData,
@@ -95,6 +96,7 @@ export function useWatchlistPolling({
             ...item,
             last_price: nextLast,
             previousClose: v.previousClose,
+            currency: v.currency ?? item.currency ?? "TWD",
           };
         }
         return item;
