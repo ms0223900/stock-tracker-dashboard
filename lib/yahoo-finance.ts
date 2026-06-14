@@ -12,8 +12,8 @@ export interface StockPrice {
   previousClose: number | null;
   change: number | null;
   changePercent: number | null;
-  high: number;
-  low: number;
+  high: number | null;
+  low: number | null;
   open: number;
   volume: number;
   updatedAt: Date;
@@ -155,10 +155,8 @@ async function fetchStockPriceRaw(symbol: string, url: string): Promise<StockPri
     change = currentPrice - previousClose;
     changePercent = previousClose !== 0 ? (change / previousClose) * 100 : null;
   }
-  const high =
-    maxNonNull(quote.high) ?? maxNonNull(quote.close) ?? lastNonNull(quote.high) ?? 0;
-  const low =
-    minNonNull(quote.low) ?? minNonNull(quote.close) ?? lastNonNull(quote.low) ?? 0;
+  const high = maxNonNull(quote.high) ?? null;
+  const low = minNonNull(quote.low) ?? null;
   const open =
     firstNonNull(quote.open) ?? firstNonNull(quote.close) ?? lastNonNull(quote.open) ?? 0;
   const volume = sumNonNull(quote.volume);
