@@ -10,7 +10,7 @@
 
 **輸出格式**：
 - 畫面顯示：股票代號、目前價格、**幣別**、更新時間（幣別代碼如 `TWD`、`USD`；Yahoo 解析見 **US-010**，價格符號與小數位見 **US-011**，追蹤清單持久化見 **US-012**）
-- OHLC 網格顯示「最高」「最低」「開盤」「成交量」：`high`／`low`／`open`／`volume` 來自 Yahoo `indicators.quote` 經 `lib/yahoo-finance.ts` 正規化（`high`／`low` 之 fallback 鏈見 `docs/spec.md`「最高／最低價」）；與走勢圖上依 `close` 序列算的極值**語意不同**，規格以 spec 為準
+- OHLC 網格顯示「最高」「最低」「開盤」「成交量」：`high`／`low`／`open`／`volume` 來自 Yahoo `indicators.quote` 經 `lib/yahoo-finance.ts` 正規化；`high`／`low` 僅取自 `quote.high`／`quote.low` 陣列之 max／min，無有效值時為 `null` 並於 UI 顯示 `--`；與走勢圖上依 `close` 序列算的極值**語意不同**，規格以 spec 為準
 - 查詢中顯示 loading 狀態
 - 查詢失敗顯示錯誤訊息
 
@@ -21,6 +21,7 @@
 - [x] **AC4**：查詢期間按鈕顯示 loading 狀態，防止重複送出
 - [x] **AC5**：API 失敗時畫面顯示「目前無法取得股價資料，請稍後再試」
 - [x] **AC6**：股價資訊區在未查詢前不顯示，查詢成功後才出現
+- [x] **AC7**：OHLC 網格之「最高」「最低」：Yahoo 未回傳有效 `quote.high`／`quote.low` 時顯示 `--`（不得空白、`NT$undefined` 或 `NT$0.00` 等不合理占位）；有有效數值時依 `formatPrice` 多幣別格式顯示（見 **US-011**）
 
 #### 驗收說明
 
@@ -54,7 +55,17 @@
 狀態：✅ 通過
 
 - `components/StockResultCard.tsx` 的 OHLC 網格顯示 `open`、`high`、`low`、`volume`。
-- `lib/yahoo-finance.ts` 從 Yahoo chart API 組出上述欄位；`high`／`low` 為 quote 陣列之 max／min 與 `close`／尾端 fallback，**不**等於圖表內對 `chartData`（僅 close）取極值。
+- `lib/yahoo-finance.ts` 從 Yahoo chart API 組出上述欄位；`high`／`low` 為 `quote.high`／`quote.low` 陣列之 max／min，**不**等於圖表內對 `chartData`（僅 close）取極值。
+
+---
+
+**AC-7：[最高／最低缺資料時顯示 `--`]**
+
+狀態：✅ 通過
+
+- `lib/yahoo-finance.ts`：`StockPrice.high`／`low` 為 `number | null`；`quote.high`／`quote.low` 無有效值時為 `null`（不以 `close` 或 `0` 冒充）。
+- `lib/format.ts`：`formatPriceOrDash` 於 `null`／非有限數時回傳 `--`，否則委派 `formatPrice`。
+- `components/StockResultCard.tsx`：OHLC「最高」「最低」使用 `formatPriceOrDash(stockData.high|low, …)`；「開盤」「成交量」仍用原 `formatPrice`／`formatVolumeCompact`，行為不變。
 
 ---
 

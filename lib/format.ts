@@ -9,8 +9,13 @@ const CURRENCY_CONFIG: Record<string, { symbol: string; decimals: number }> = {
   SGD: { symbol: "S$", decimals: 2 },
 };
 
+/** OHLC 最高／最低：無有效資料時顯示 `--`，不影響其他 `formatPrice` 呼叫處 */
+export function formatPriceOrDash(n: number | null, currency = "TWD"): string {
+  if (n == null || !Number.isFinite(n)) return "--";
+  return formatPrice(n, currency);
+}
+
 export function formatPrice(n: number | null, currency = "TWD"): string {
-  // if (n === null) return "—";
   const cfg = CURRENCY_CONFIG[currency] ?? { symbol: "TWD ", decimals: 2 };
   const s = n?.toLocaleString("zh-TW", {
     minimumFractionDigits: cfg.decimals,
