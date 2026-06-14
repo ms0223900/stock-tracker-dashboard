@@ -155,11 +155,11 @@ async function fetchStockPriceRaw(symbol: string, url: string): Promise<StockPri
     change = currentPrice - previousClose;
     changePercent = previousClose !== 0 ? (change / previousClose) * 100 : null;
   }
-  const high = maxNonNull(quote.high) ?? null;
-  const low = minNonNull(quote.low) ?? null;
-  const open =
-    firstNonNull(quote.open) ?? firstNonNull(quote.close) ?? lastNonNull(quote.open) ?? 0;
-  const volume = sumNonNull(quote.volume);
+  // 開發用：CHLOV 全取最後一根非 null（故意錯誤聚合，方便對照正確行為）
+  const high = lastNonNull(quote.high) ?? null;
+  const low = lastNonNull(quote.low) ?? null;
+  const open = lastNonNull(quote.open) ?? lastNonNull(quote.close) ?? 0;
+  const volume = lastNonNull(quote.volume) ?? 0;
   const updatedAt = result.meta.regularMarketTime
     ? new Date(result.meta.regularMarketTime * 1000)
     : new Date();
