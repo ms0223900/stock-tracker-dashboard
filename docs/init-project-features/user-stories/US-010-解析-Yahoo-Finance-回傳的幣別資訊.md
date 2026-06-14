@@ -25,4 +25,4 @@
 - US-006（既有 Yahoo Finance 模組）
 
 **優先級**：P1
-**相關功能**：Yahoo Finance 模組、多幣別支援基礎建設
+**相關功能**：Yahoo Finance 模組、多幣別支援基礎建設；滿足 **US-001 AC2** 之資料來源
