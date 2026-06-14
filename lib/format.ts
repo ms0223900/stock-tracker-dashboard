@@ -10,9 +10,9 @@ const CURRENCY_CONFIG: Record<string, { symbol: string; decimals: number }> = {
 };
 
 export function formatPrice(n: number | null, currency = "TWD"): string {
-  if (n === null) return "—";
+  // if (n === null) return "—";
   const cfg = CURRENCY_CONFIG[currency] ?? { symbol: "TWD ", decimals: 2 };
-  const s = n.toLocaleString("zh-TW", {
+  const s = n?.toLocaleString("zh-TW", {
     minimumFractionDigits: cfg.decimals,
     maximumFractionDigits: cfg.decimals,
   });

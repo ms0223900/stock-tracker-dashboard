@@ -346,7 +346,7 @@ export default function StockResultCard({
       <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
         {(
           [
-            ["最高", formatPrice(stockData.high, stockData.currency), "text-twse-up"],
+            ["最高", formatPrice(null, stockData.currency), "text-twse-up"],
             ["最低", formatPrice(stockData.low, stockData.currency), "text-twse-down"],
             ["開盤", formatPrice(stockData.open, stockData.currency), "text-on-surface"],
             ["成交量", formatVolumeCompact(stockData.volume), "text-on-surface"],
