@@ -82,6 +82,21 @@ type YahooQuoteSeries = {
   volume: (number | null)[];
 };
 
+/** 當日 1 分 K：開=第一根、高低=極值、量=加總。 */
+function aggregateIntradayOhlcv(quote: YahooQuoteSeries): {
+  open: number;
+  high: number | null;
+  low: number | null;
+  volume: number;
+} {
+  return {
+    open: firstNonNull(quote.open) ?? firstNonNull(quote.close) ?? 0,
+    high: maxNonNull(quote.high) ?? null,
+    low: minNonNull(quote.low) ?? null,
+    volume: sumNonNull(quote.volume),
+  };
+}
+
 /** 瀏覽器 Console：對照 Yahoo 原始 1m 序列與程式聚合結果（僅 client 端查詢時輸出）。 */
 function logYahooPriceDebug(
   symbol: string,
@@ -146,10 +161,7 @@ function logYahooPriceDebug(
   }
 
   const aggregatedFromSeries = {
-    open: firstNonNull(quote.open) ?? firstNonNull(quote.close) ?? null,
-    high: maxNonNull(quote.high) ?? null,
-    low: minNonNull(quote.low) ?? null,
-    volume: sumNonNull(quote.volume),
+    ...aggregateIntradayOhlcv(quote),
     closeLast: lastNonNull(quote.close) ?? null,
   };
 
@@ -182,7 +194,7 @@ function logYahooPriceDebug(
     console.log(`有效分 K 共 ${bars.length} 根（展開下方 table 檢視）`);
     console.table(bars);
   }
-  console.log("程式算出（目前回傳邏輯：各欄取最後一根非 null）", {
+  console.log("程式算出（日內 1m 聚合：開=第一根、高低=極值、量=加總）", {
     currentPrice: computed.currentPrice,
     hasRegularMarketPriceFromMeta: computed.hasRegularMarketPriceFromMeta,
     previousClose: computed.previousClose,
@@ -190,8 +202,8 @@ function logYahooPriceDebug(
     high: computed.high,
     low: computed.low,
     volume: computed.volume,
+    closeLast: aggregatedFromSeries.closeLast,
   });
-  console.log("程式算出（日內 1m 聚合參考：開=第一根、高低=極值、量=加總）", aggregatedFromSeries);
   console.groupEnd();
 }
 
@@ -279,11 +291,7 @@ async function fetchStockPriceRaw(symbol: string, url: string): Promise<StockPri
     change = currentPrice - previousClose;
     changePercent = previousClose !== 0 ? (change / previousClose) * 100 : null;
   }
-  // 開發用：CHLOV 全取最後一根非 null（故意錯誤聚合，方便對照正確行為）
-  const high = lastNonNull(quote.high) ?? null;
-  const low = lastNonNull(quote.low) ?? null;
-  const open = lastNonNull(quote.open) ?? lastNonNull(quote.close) ?? 0;
-  const volume = lastNonNull(quote.volume) ?? 0;
+  const { open, high, low, volume } = aggregateIntradayOhlcv(quote);
 
   logYahooPriceDebug(symbol, result, quote, {
     currentPrice,
