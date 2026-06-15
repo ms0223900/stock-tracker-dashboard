@@ -74,6 +74,130 @@ function sumNonNull(nums: (number | null)[] | undefined): number {
   return filterNonNullNumbers(nums).reduce((a, b) => a + b, 0);
 }
 
+type YahooQuoteSeries = {
+  open: (number | null)[];
+  high: (number | null)[];
+  low: (number | null)[];
+  close: (number | null)[];
+  volume: (number | null)[];
+};
+
+/** 瀏覽器 Console：對照 Yahoo 原始 1m 序列與程式聚合結果（僅 client 端查詢時輸出）。 */
+function logYahooPriceDebug(
+  symbol: string,
+  result: NonNullable<YahooChartResponse["chart"]["result"]>[number],
+  quote: YahooQuoteSeries,
+  computed: {
+    currentPrice: number | undefined;
+    hasRegularMarketPriceFromMeta: boolean;
+    previousClose: number | null;
+    high: number | null;
+    low: number | null;
+    open: number;
+    volume: number;
+  },
+): void {
+  if (!DEBUG_YAHOO_PRICE_IN_CONSOLE || typeof window === "undefined") return;
+
+  const { meta } = result;
+  const timestamps = result.timestamp ?? [];
+
+  const seriesStats = (name: string, arr: (number | null)[] | undefined) => ({
+    欄位: name,
+    總長度: arr?.length ?? 0,
+    非null筆數: arr ? filterNonNullNumbers(arr).length : 0,
+    最後非null: arr ? lastNonNull(arr) : undefined,
+    第一非null: arr ? firstNonNull(arr) : undefined,
+  });
+
+  const bars: Array<{
+    時間: string;
+    開: number | null;
+    高: number | null;
+    低: number | null;
+    收: number | null;
+    量: number | null;
+  }> = [];
+  const len = Math.max(
+    timestamps.length,
+    quote.open?.length ?? 0,
+    quote.high?.length ?? 0,
+    quote.low?.length ?? 0,
+    quote.close?.length ?? 0,
+    quote.volume?.length ?? 0,
+  );
+  for (let i = 0; i < len; i++) {
+    const o = quote.open?.[i] ?? null;
+    const h = quote.high?.[i] ?? null;
+    const l = quote.low?.[i] ?? null;
+    const c = quote.close?.[i] ?? null;
+    const v = quote.volume?.[i] ?? null;
+    if (o === null && h === null && l === null && c === null && v === null) continue;
+    bars.push({
+      時間: timestamps[i]
+        ? new Date(timestamps[i] * 1000).toLocaleString("zh-TW", { hour12: false })
+        : `#${i}`,
+      開: o,
+      高: h,
+      低: l,
+      收: c,
+      量: v,
+    });
+  }
+
+  const aggregatedFromSeries = {
+    open: firstNonNull(quote.open) ?? firstNonNull(quote.close) ?? null,
+    high: maxNonNull(quote.high) ?? null,
+    low: minNonNull(quote.low) ?? null,
+    volume: sumNonNull(quote.volume),
+    closeLast: lastNonNull(quote.close) ?? null,
+  };
+
+  const label = `[股價除錯] ${symbol}`;
+  console.groupCollapsed(`${label} — Yahoo 原始 vs 程式計算`);
+  console.log("Yahoo meta", {
+    regularMarketPrice: meta.regularMarketPrice,
+    previousClose: meta.previousClose,
+    regularMarketTime: meta.regularMarketTime
+      ? new Date(meta.regularMarketTime * 1000).toLocaleString("zh-TW", { hour12: false })
+      : null,
+    currency: meta.currency,
+  });
+  console.table([
+    seriesStats("open", quote.open),
+    seriesStats("high", quote.high),
+    seriesStats("low", quote.low),
+    seriesStats("close", quote.close),
+    seriesStats("volume", quote.volume),
+  ]);
+  console.log("Yahoo 原始 OHLCV 序列（完整，含 null）", {
+    timestamp: timestamps,
+    open: quote.open,
+    high: quote.high,
+    low: quote.low,
+    close: quote.close,
+    volume: quote.volume,
+  });
+  if (bars.length > 0) {
+    console.log(`有效分 K 共 ${bars.length} 根（展開下方 table 檢視）`);
+    console.table(bars);
+  }
+  console.log("程式算出（目前回傳邏輯：各欄取最後一根非 null）", {
+    currentPrice: computed.currentPrice,
+    hasRegularMarketPriceFromMeta: computed.hasRegularMarketPriceFromMeta,
+    previousClose: computed.previousClose,
+    open: computed.open,
+    high: computed.high,
+    low: computed.low,
+    volume: computed.volume,
+  });
+  console.log("程式算出（日內 1m 聚合參考：開=第一根、高低=極值、量=加總）", aggregatedFromSeries);
+  console.groupEnd();
+}
+
+/** TODO(prototype): 除錯完成後改為 false 或移除此區塊 */
+const DEBUG_YAHOO_PRICE_IN_CONSOLE = true;
+
 export const PRICE_EQ_EPS = 0.01;
 
 export function approxEqualPrices(a: number, b: number): boolean {
@@ -160,6 +284,17 @@ async function fetchStockPriceRaw(symbol: string, url: string): Promise<StockPri
   const low = lastNonNull(quote.low) ?? null;
   const open = lastNonNull(quote.open) ?? lastNonNull(quote.close) ?? 0;
   const volume = lastNonNull(quote.volume) ?? 0;
+
+  logYahooPriceDebug(symbol, result, quote, {
+    currentPrice,
+    hasRegularMarketPriceFromMeta,
+    previousClose,
+    high,
+    low,
+    open,
+    volume,
+  });
+
   const updatedAt = result.meta.regularMarketTime
     ? new Date(result.meta.regularMarketTime * 1000)
     : new Date();
