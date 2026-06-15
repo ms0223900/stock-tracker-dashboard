@@ -35,6 +35,10 @@ export default function HomePage() {
     handleSave,
     handleDelete,
     onTargetPriceChange,
+    updatingNoteId,
+    noteUpdateErrors,
+    handleUpdateNote,
+    clearNoteUpdateError,
   } = useWatchlist();
 
   const { chartDataMap } = useWatchlistPolling({
@@ -79,8 +83,12 @@ export default function HomePage() {
           watchlist={watchlist}
           watchlistLoading={watchlistLoading}
           deletingId={deletingId}
+          updatingNoteId={updatingNoteId}
+          noteUpdateErrors={noteUpdateErrors}
           chartDataMap={chartDataMap}
           onDelete={handleDelete}
+          onUpdateNote={handleUpdateNote}
+          onClearNoteUpdateError={clearNoteUpdateError}
         />
 
         <footer className="pt-5 text-center">

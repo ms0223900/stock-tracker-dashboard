@@ -42,3 +42,26 @@ export function validateTargetPrice(value: string): ValidationResult {
 
   return { valid: true, error: null };
 }
+
+export const WATCHLIST_NOTE_MAX_LENGTH = 500;
+
+/** trim 後空字串視為無備註 */
+export function normalizeWatchlistNote(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  return trimmed;
+}
+
+export function validateWatchlistNote(value: string): ValidationResult {
+  const trimmed = value.trim();
+
+  if (!trimmed) {
+    return { valid: true, error: null };
+  }
+
+  if (Array.from(trimmed).length > WATCHLIST_NOTE_MAX_LENGTH) {
+    return { valid: false, error: "備註不可超過 500 字" };
+  }
+
+  return { valid: true, error: null };
+}

@@ -5,13 +5,18 @@ import { twseWatchlistLatestTextClass } from "@/lib/twse-display";
 import { getTwseMovement, type ChartPoint } from "@/lib/yahoo-finance";
 import type { WatchlistItem } from "@/types/watchlist";
 import StockSparkline from "./StockSparkline";
+import WatchlistNoteField from "./WatchlistNoteField";
 
 interface WatchlistCardProps {
   watchlist: WatchlistItem[];
   watchlistLoading: boolean;
   deletingId: string | null;
+  updatingNoteId: string | null;
+  noteUpdateErrors: Record<string, string>;
   chartDataMap: Record<string, ChartPoint[]>;
   onDelete: (id: string) => void;
+  onUpdateNote: (id: string, value: string) => Promise<string | null | false>;
+  onClearNoteUpdateError: (id: string) => void;
 }
 
 function formatNotifiedAt(iso: string | null | undefined): string | null {
@@ -51,8 +56,12 @@ export default function WatchlistCard({
   watchlist,
   watchlistLoading,
   deletingId,
+  updatingNoteId,
+  noteUpdateErrors,
   chartDataMap,
   onDelete,
+  onUpdateNote,
+  onClearNoteUpdateError,
 }: WatchlistCardProps) {
   return (
     <section className="w-full">
@@ -130,6 +139,16 @@ export default function WatchlistCard({
                     </p>
                   </div>
                 </div>
+
+                <WatchlistNoteField
+                  itemId={item.id}
+                  symbol={item.symbol}
+                  savedNote={item.note}
+                  updating={updatingNoteId === item.id}
+                  error={noteUpdateErrors[item.id] ?? null}
+                  onUpdate={onUpdateNote}
+                  onClearError={onClearNoteUpdateError}
+                />
 
                 <StockSparkline data={sparkData} trend={movement} />
 

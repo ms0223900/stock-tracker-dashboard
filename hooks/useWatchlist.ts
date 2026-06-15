@@ -1,7 +1,11 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import { validateTargetPrice } from "@/lib/validation";
+import {
+  normalizeWatchlistNote,
+  validateTargetPrice,
+  validateWatchlistNote,
+} from "@/lib/validation";
 import type { StockPrice } from "@/lib/yahoo-finance";
 import type { WatchlistItem } from "@/types/watchlist";
 import { useCallback, useState } from "react";
@@ -44,6 +48,8 @@ export function useWatchlist() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [updatingNoteId, setUpdatingNoteId] = useState<string | null>(null);
+  const [noteUpdateErrors, setNoteUpdateErrors] = useState<Record<string, string>>({});
 
   const supabase = createClient();
 
@@ -66,6 +72,7 @@ export function useWatchlist() {
         ...row,
         currency: row.currency ?? "TWD",
         previousClose: row.previousClose ?? null,
+        note: row.note ?? null,
       }));
       let merged: WatchlistItem[] = items;
       setWatchlist((prev) => {
@@ -131,6 +138,60 @@ export function useWatchlist() {
     setTargetPriceError((prev) => (prev ? null : prev));
   }, []);
 
+  const handleUpdateNote = useCallback(
+    async (id: string, value: string): Promise<string | null | false> => {
+      const validation = validateWatchlistNote(value);
+      if (!validation.valid) {
+        setNoteUpdateErrors((prev) => ({
+          ...prev,
+          [id]: validation.error ?? "備註格式無效",
+        }));
+        return false;
+      }
+
+      const normalized = normalizeWatchlistNote(value);
+      setUpdatingNoteId(id);
+      setNoteUpdateErrors((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+
+      const { error } = await supabase
+        .from("watchlist")
+        .update({
+          note: normalized,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id);
+
+      if (error) {
+        setNoteUpdateErrors((prev) => ({
+          ...prev,
+          [id]: `備註儲存失敗，請稍後再試：${error.message}`,
+        }));
+        setUpdatingNoteId(null);
+        return false;
+      }
+
+      setWatchlist((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, note: normalized } : item)),
+      );
+      setUpdatingNoteId(null);
+      return normalized;
+    },
+    [supabase],
+  );
+
+  const clearNoteUpdateError = useCallback((id: string) => {
+    setNoteUpdateErrors((prev) => {
+      if (!prev[id]) return prev;
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  }, []);
+
   return {
     watchlist,
     setWatchlist,
@@ -144,5 +205,9 @@ export function useWatchlist() {
     handleSave,
     handleDelete,
     onTargetPriceChange,
+    updatingNoteId,
+    noteUpdateErrors,
+    handleUpdateNote,
+    clearNoteUpdateError,
   };
 }
