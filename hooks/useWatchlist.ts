@@ -11,6 +11,7 @@ import type { WatchlistItem } from "@/types/watchlist";
 import { useCallback, useState } from "react";
 
 const PRICE_NEAR_EPS = 0.01;
+const NOTE_UPDATE_LOG_PREFIX = "[watchlist-note]";
 
 function pricesNearlyEqual(a: number, b: number): boolean {
   return Math.abs(a - b) < PRICE_NEAR_EPS;
@@ -140,8 +141,18 @@ export function useWatchlist() {
 
   const handleUpdateNote = useCallback(
     async (id: string, value: string): Promise<string | null | false> => {
+      console.debug(NOTE_UPDATE_LOG_PREFIX, "1/4 start", {
+        id,
+        valueLength: value.length,
+        trimmedLength: Array.from(value.trim()).length,
+      });
+
       const validation = validateWatchlistNote(value);
       if (!validation.valid) {
+        console.warn(NOTE_UPDATE_LOG_PREFIX, "2/4 validation failed", {
+          id,
+          error: validation.error,
+        });
         setNoteUpdateErrors((prev) => ({
           ...prev,
           [id]: validation.error ?? "備註格式無效",
@@ -150,6 +161,8 @@ export function useWatchlist() {
       }
 
       const normalized = normalizeWatchlistNote(value);
+      console.debug(NOTE_UPDATE_LOG_PREFIX, "2/4 validation ok", { id, normalized });
+
       setUpdatingNoteId(id);
       setNoteUpdateErrors((prev) => {
         const next = { ...prev };
@@ -157,15 +170,29 @@ export function useWatchlist() {
         return next;
       });
 
-      const { error } = await supabase
+      console.debug(NOTE_UPDATE_LOG_PREFIX, "3/4 supabase update", {
+        id,
+        note: normalized,
+      });
+
+      const { data, error } = await supabase
         .from("watchlist")
         .update({
           note: normalized,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", id);
+        .eq("id", id)
+        .select("id, note, updated_at");
 
       if (error) {
+        console.error(NOTE_UPDATE_LOG_PREFIX, "4/4 supabase error", {
+          id,
+          normalized,
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+        });
         setNoteUpdateErrors((prev) => ({
           ...prev,
           [id]: `備註儲存失敗，請稍後再試：${error.message}`,
@@ -173,6 +200,22 @@ export function useWatchlist() {
         setUpdatingNoteId(null);
         return false;
       }
+
+      if (!data || data.length === 0) {
+        console.warn(NOTE_UPDATE_LOG_PREFIX, "4/4 no row updated", {
+          id,
+          normalized,
+          hint: "可能 id 不存在，或 RLS 擋住 update",
+        });
+        setNoteUpdateErrors((prev) => ({
+          ...prev,
+          [id]: "備註儲存失敗，請稍後再試：找不到該追蹤項目",
+        }));
+        setUpdatingNoteId(null);
+        return false;
+      }
+
+      console.debug(NOTE_UPDATE_LOG_PREFIX, "4/4 success", { id, data });
 
       setWatchlist((prev) =>
         prev.map((item) => (item.id === id ? { ...item, note: normalized } : item)),
